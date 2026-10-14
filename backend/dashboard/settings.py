@@ -195,20 +195,19 @@ CORS_ALLOWED_ORIGINS = config(
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = (*default_headers, 'x-api-key')
 
-# NSDL requester, certificate, private-key, password, and DDPI values are
-# stored per company in the NSDL Credentials table. The Java signing JAR
-# remains deployment configuration.
-NSDL_KYC_ENVIRONMENT = config('NSDL_KYC_ENVIRONMENT', default='uat')
-NSDL_KYC_BASE_URL = config('NSDL_KYC_BASE_URL', default='')
-NSDL_KYC_SIGNING_JAR = config('NSDL_KYC_SIGNING_JAR', default='')
-NSDL_KYC_VERIFY_SSL = config('NSDL_KYC_VERIFY_SSL', default=True, cast=cast_debug)
+# NSDL endpoints and signing configuration are application constants. NSDL
+# requester credentials remain stored per company in the NSDL Credentials table.
+NSDL_KYC_ENVIRONMENT = 'uat'
+NSDL_KYC_BASE_URL = 'fsdfsdfs'
+NSDL_KYC_SIGNING_JAR = 'enc/nsdl_file.jar'
+NSDL_KYC_VERIFY_SSL = True
 CKYC_VERIFY_SSL = config('CKYC_VERIFY_SSL', default=True, cast=cast_debug)
 
 # MCX KYC is preview-only until MCX_KYC_SUBMIT is explicitly enabled.  The
 # member credentials themselves are stored per company in McxCredentials.
 MCX_KYC_SUBMIT = config('MCX_KYC_SUBMIT', default=False, cast=cast_debug)
-MCX_KYC_LIVE_BASE_URL = config('MCX_KYC_LIVE_BASE_URL', default='')
-MCX_KYC_UAT_BASE_URL = config('MCX_KYC_UAT_BASE_URL', default='')
+MCX_KYC_LIVE_BASE_URL = 'https://ucc.mcxindia.com/v1/ucc'
+MCX_KYC_UAT_BASE_URL = 'https://ucc-uat.mcxindia.com/v1/ucc'
 MCX_KYC_TIMEOUT = config('MCX_KYC_TIMEOUT', default=30, cast=int)
 MCX_KYC_VERIFY_SSL = config('MCX_KYC_VERIFY_SSL', default=True, cast=cast_debug)
 
