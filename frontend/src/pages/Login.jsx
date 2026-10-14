@@ -42,8 +42,8 @@ export default function Login({ onLoginSuccess }) {
     <div className="login-shell">
       <div className="login-card">
         <div className="login-brand">
-          <div className="login-logo">JM</div>
-          <h1 className="login-title">JM Financial</h1>
+          <div className="login-logo"></div>
+          <h1 className="login-title">Dashboard</h1>
           <p className="login-subtitle">Admin Portal</p>
         </div>
 
