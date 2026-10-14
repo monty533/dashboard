@@ -1,0 +1,7 @@
+{
+  "success": false,
+  "msg": "Unable to connect to CKYC service: HTTPSConnectionPool(host='example.invalid', port=443): Max retries exceeded with url: /ckyc/sftp/uat/upload (Caused by NameResolutionError(\"HTTPSConnection(host='example.invalid', port=443): Failed to resolve 'example.invalid' ([Errno -2] Name or service not known)\"))",
+  "errors": [
+    "Unable to connect to CKYC service: HTTPSConnectionPool(host='example.invalid', port=443): Max retries exceeded with url: /ckyc/sftp/uat/upload (Caused by NameResolutionError(\"HTTPSConnection(host='example.invalid', port=443): Failed to resolve 'example.invalid' ([Errno -2] Name or service not known)\"))"
+  ]
+}

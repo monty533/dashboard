@@ -1,0 +1,218 @@
+{
+  "instr": {
+    "beneficiaryDetails": {
+      "primaryBeneficiary": {
+        "name": "SIKANDAR ABBAS NANGIA",
+        "shortName": "SIKANDAR ABBAS N",
+        "pan": "BMFPP3900C",
+        "panFlag": "Y",
+        "grossAnnualIncome": "05",
+        "dob": "19980324",
+        "gender": "1",
+        "mobile": "9168980480",
+        "email": "PRATIK1@JMFL.COM",
+        "aadhar": "123456789123",
+        "ddpiid": "5464546464664",
+        "eStatement": "E",
+        "beneficiaryCoresAddress": {
+          "addressLine1": "AREA11 DASDAS hgkjhfhgf",
+          "addressLine2": "",
+          "addressLine3": "",
+          "addressLine4": "",
+          "addressType": "1",
+          "city": "MUMBAI",
+          "countrycode": "356",
+          "statecode": "24",
+          "zipcode": "361250"
+        },
+        "beneficiaryPermAddress": {
+          "addressLine1": "S O ABBAS 2329 JODIA JODIYA JODIYA JAMNAGAR S O ABBAS",
+          "addressLine2": "2329 JODIA JODIYA JODIYA JAMNAGAR NANGHIA STREET",
+          "addressLine3": "GUJARAT",
+          "addressLine4": "",
+          "addressType": "4",
+          "city": "MUMBAI",
+          "countrycode": "356",
+          "statecode": "24",
+          "zipcode": "361250"
+        },
+        "signature": "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"
+      },
+      "additionalBeneDetails": {
+        "familyMobileFlag": "N",
+        "familyEmailFlag": "N",
+        "occupation": "6",
+        "fatherOrHusbandName": "DILIP",
+        "dpId": "123456",
+        "clientId": "10313548",
+        "nominationOption": "Y",
+        "sharePercentEqually": "Y",
+        "numOfNominees": 3,
+        "listOfNominees": [
+          {
+            "seqNo": "1",
+            "nomineeName": "",
+            "nomineeShare": "",
+            "dob": "20220201",
+            "minor": "Y",
+            "relationWithNominee": "03",
+            "nomineeMobileNum": "4562589874",
+            "nomineeEmailId": "a@gmail.com",
+            "nomineeIdentificationDtls": {
+              "pan": "POJKDBGKJFD",
+              "aadhar": "",
+              "dematAccId": "",
+              "savingBankAccNo": ""
+            },
+            "nomineeAddress": {
+              "addressLine1": "kkjhlk kkjhlk nbvnmb",
+              "addressLine2": "",
+              "addressLine3": "",
+              "addressLine4": "",
+              "addressType": "3",
+              "city": "delhi",
+              "countrycode": "356",
+              "statecode": "7",
+              "zipcode": "456254"
+            },
+            "guardianFlag": "",
+            "guardianName": "",
+            "guardianRelationship": "",
+            "guardianMobileNum": "",
+            "guardianEmailId": "",
+            "guardianIdentificationDtls": {
+              "pan": "",
+              "aadhar": "",
+              "dematAccId": "",
+              "savingBankAccNo": ""
+            },
+            "guardianAddress": {
+              "addressLine1": "",
+              "addressLine2": "",
+              "addressLine3": "",
+              "addressLine4": "",
+              "addressType": "",
+              "city": "",
+              "countrycode": "",
+              "statecode": "",
+              "zipcode": ""
+            }
+          },
+          {
+            "seqNo": "2",
+            "nomineeName": "",
+            "nomineeShare": "",
+            "dob": "20180102",
+            "minor": "Y",
+            "relationWithNominee": "06",
+            "nomineeMobileNum": "8745879658",
+            "nomineeEmailId": "SOFTTEST@JMFL.COM",
+            "nomineeIdentificationDtls": {
+              "pan": "BXKPG7148B",
+              "aadhar": "",
+              "dematAccId": "",
+              "savingBankAccNo": ""
+            },
+            "nomineeAddress": {
+              "addressLine1": "kkjhlk kkjhlk nbvnmb",
+              "addressLine2": "",
+              "addressLine3": "",
+              "addressLine4": "",
+              "addressType": "7",
+              "city": "gurgaon",
+              "countrycode": "356",
+              "statecode": "6",
+              "zipcode": "874587"
+            },
+            "guardianFlag": "",
+            "guardianName": "",
+            "guardianRelationship": "",
+            "guardianMobileNum": "",
+            "guardianEmailId": "",
+            "guardianIdentificationDtls": {
+              "pan": "",
+              "aadhar": "",
+              "dematAccId": "",
+              "savingBankAccNo": ""
+            },
+            "guardianAddress": {
+              "addressLine1": "",
+              "addressLine2": "",
+              "addressLine3": "",
+              "addressLine4": "",
+              "addressType": "",
+              "city": "",
+              "countrycode": "",
+              "statecode": "",
+              "zipcode": ""
+            }
+          },
+          {
+            "seqNo": "3",
+            "nomineeName": "",
+            "nomineeShare": "",
+            "dob": "19980324",
+            "minor": "N",
+            "relationWithNominee": "02",
+            "nomineeMobileNum": "8745879658",
+            "nomineeEmailId": "SAGARGHARAT@GMAIL.COM",
+            "nomineeIdentificationDtls": {
+              "pan": "ABCDE7485A",
+              "aadhar": "",
+              "dematAccId": "",
+              "savingBankAccNo": ""
+            },
+            "nomineeAddress": {
+              "addressLine1": "gurgaonh bkh gurgao s nhbkh",
+              "addressLine2": "",
+              "addressLine3": "",
+              "addressLine4": "",
+              "addressType": "9",
+              "city": "gurgaon",
+              "countrycode": "356",
+              "statecode": "6",
+              "zipcode": "874587"
+            },
+            "guardianFlag": "",
+            "guardianName": "",
+            "guardianRelationship": "",
+            "guardianMobileNum": "",
+            "guardianEmailId": "",
+            "guardianIdentificationDtls": {
+              "pan": "",
+              "aadhar": "",
+              "dematAccId": "",
+              "savingBankAccNo": ""
+            },
+            "guardianAddress": {
+              "addressLine1": "",
+              "addressLine2": "",
+              "addressLine3": "",
+              "addressLine4": "",
+              "addressType": "",
+              "city": "",
+              "countrycode": "",
+              "statecode": "",
+              "zipcode": ""
+            }
+          }
+        ]
+      }
+    },
+    "bankDetails": {
+      "accountNumber": "9170100200200",
+      "bankName": "AXIS BANK LTD",
+      "accountType": "10",
+      "ifsc": "UTIB0001894",
+      "micr": "411211030",
+      "bankAddress": {
+        "addressType": 2,
+        "addressLine1": "AXIS BANK delhi Axis",
+        "addressLine2": "",
+        "addressLine3": "",
+        "addressLine4": "",
+        "zipcode": "361250"
+      }
+    }
+  }
+}

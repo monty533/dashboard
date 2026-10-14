@@ -1,0 +1,14 @@
+{
+  "success": false,
+  "error": "Unauthorize Access.",
+  "message": "Unauthorize Access.",
+  "msg": "Unauthorize Access.",
+  "stage": "upload",
+  "provider_response": {
+    "success": false,
+    "AuthResponse": {
+      "ErrorId": "ERR002",
+      "ErrorMessage": "Unauthorize Access."
+    }
+  }
+}

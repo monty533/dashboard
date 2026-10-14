@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "error": "HTTPSConnectionPool(host='example.invalid', port=443): Max retries exceeded with url: /kra/GetToken (Caused by NameResolutionError(\"HTTPSConnection(host='example.invalid', port=443): Failed to resolve 'example.invalid' ([Errno -2] Name or service not known)\"))",
+  "message": "Unable to connect to KRA service: HTTPSConnectionPool(host='example.invalid', port=443): Max retries exceeded with url: /kra/GetToken (Caused by NameResolutionError(\"HTTPSConnection(host='example.invalid', port=443): Failed to resolve 'example.invalid' ([Errno -2] Name or service not known)\"))",
+  "errors": [
+    "HTTPSConnectionPool(host='example.invalid', port=443): Max retries exceeded with url: /kra/GetToken (Caused by NameResolutionError(\"HTTPSConnection(host='example.invalid', port=443): Failed to resolve 'example.invalid' ([Errno -2] Name or service not known)\"))"
+  ]
+}

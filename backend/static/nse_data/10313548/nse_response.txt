@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "error": "HTTPSConnectionPool(host='api.nseindia.com', port=443): Read timed out. (read timeout=10)",
+  "msg": "Unable to connect to NSE auth service",
+  "status": 502
+}

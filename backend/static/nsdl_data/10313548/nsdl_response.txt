@@ -1,0 +1,9 @@
+{
+  "success": false,
+  "status": "NSDL_SUBMISSION_ERROR",
+  "error": "NSDL signing JAR was not found.",
+  "msg": "NSDL signing JAR was not found.",
+  "errors": [
+    "NSDL signing JAR was not found."
+  ]
+}
