@@ -174,7 +174,7 @@ USERDETAILS_MANDATORY_COLUMNS = {
     'bse_slbm',
     'mcx',
     'nse_cash',
-    'nse_currency',
+    'nse_currency', 
     'nse_fo',
     'nse_slbm',
     'networth_date',
