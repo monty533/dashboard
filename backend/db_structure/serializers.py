@@ -1,8 +1,20 @@
 from collections.abc import Mapping
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 from rest_framework import serializers
 
 from .models import USERDETAILS_MANDATORY_COLUMNS, UserDetails
+
+
+def _is_valid_date(value):
+    for date_format in ('%d-%m-%Y', '%Y-%m-%d', '%d/%m/%Y'):
+        try:
+            datetime.strptime(value, date_format)
+        except ValueError:
+            continue
+        return True
+    return False
 
 
 USER_DETAILS_READ_ONLY_FIELDS = frozenset({
@@ -102,6 +114,53 @@ class UserDetailsSerializer(serializers.ModelSerializer):
             if value not in (None, '') and value not in options:
                 errors[field_name] = [
                     f'Invalid value. Expected one of: {", ".join(options)}.'
+                ]
+
+        nominee_check = attrs.get(
+            'nominee_check',
+            getattr(self.instance, 'nominee_check', '') if self.instance else '',
+        )
+        nominee_enabled = nominee_check == 'yes'
+
+        for field_name in (
+            'networth_date', 'annual_income_date', 'aadhaar_dob',
+            'nominee1_dob', 'nominee2_dob', 'nominee3_dob',
+        ):
+            if field_name.startswith('nominee') and not nominee_enabled:
+                continue
+            if field_name not in attrs or attrs[field_name] in (None, ''):
+                continue
+            value = str(attrs[field_name]).strip()
+            if not _is_valid_date(value):
+                errors[field_name] = [
+                    'Use a valid date in DD-MM-YYYY or YYYY-MM-DD format.'
+                ]
+
+        if nominee_enabled:
+            percentage_values = {}
+            for number in (1, 2, 3):
+                field_name = f'nominee{number}_percentage'
+                value = attrs.get(
+                    field_name,
+                    getattr(self.instance, field_name, '') if self.instance else '',
+                )
+                if value in (None, ''):
+                    continue
+                try:
+                    percentage = Decimal(str(value).strip())
+                except (InvalidOperation, ValueError):
+                    errors[field_name] = ['Enter a valid nominee percentage.']
+                    continue
+                if not percentage.is_finite() or percentage < 0 or percentage > 100:
+                    errors[field_name] = [
+                        'Nominee percentage must be between 0 and 100.'
+                    ]
+                    continue
+                percentage_values[field_name] = percentage
+
+            if percentage_values and sum(percentage_values.values()) != Decimal('100'):
+                errors['nominee_percentage'] = [
+                    'Nominee percentages must total 100.'
                 ]
 
         if errors:

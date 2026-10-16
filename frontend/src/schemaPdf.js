@@ -4,7 +4,6 @@ import { autoTable } from 'jspdf-autotable';
 const DEFAULT_SCHEMA_EXCLUDED_COLUMNS = new Set(['id']);
 const USERDETAILS_SCHEMA_EXCLUDED_COLUMNS = new Set([
   'id',
-  'cdslresponse',
   'user',
   'user_id',
   'created_at',

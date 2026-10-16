@@ -6,7 +6,6 @@ const USER_DETAILS_ENDPOINT = '/api/client/userupdatedata/';
 
 const READ_ONLY_FIELDS = new Set([
   'id', 'user', 'user_id', 'created_at', 'updated_at',
-  'cdslresponse',
 ]);
 
 const PUSH_PERMISSION_FIELDS = new Set([
@@ -137,7 +136,7 @@ const FIELD_ORDER = [
   'bankaccountnumber', 'accounttype',
   'aadhaar_name', 'aadhaar_dob', 'aadhaar_gender', 'aadhaar_house', 'aadhaar_dist', 'aadhaar_state',
   'aadhaar_country', 'aadhaar_image', 'aadhaar_file', 'aadhaar_pincode', 'aadhaar_address', 'aadhaar_no',
-  'isdppoa', 'bsda_flag', 'pledge_standing_instruction', 'cdslresponse',
+  'isdppoa', 'bsda_flag', 'pledge_standing_instruction',
   'nominee_check',
   ...Array.from({ length: 3 }, (_, index) => {
     const number = index + 1;
@@ -195,7 +194,6 @@ const FIELD_LABELS = {
   uploadsignature: 'Signature document reference',
   bsda_flag: 'BSDA flag',
   isdppoa: 'ISD / POA',
-  cdslresponse: 'CDSL response',
   nominee_check: 'Nominee enabled',
   bank_city: 'Bank city',
   bank_state: 'Bank state',
@@ -279,7 +277,7 @@ const SECTION_CONFIG = [
     id: 'preferences',
     title: 'Other preferences',
     description: 'Additional account flags and provider information.',
-    matches: name => ['isdppoa', 'bsda_flag', 'pledge_standing_instruction', 'cdslresponse'].includes(name),
+    matches: name => ['isdppoa', 'bsda_flag', 'pledge_standing_instruction'].includes(name),
   },
 ];
 

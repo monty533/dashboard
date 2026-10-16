@@ -57,80 +57,81 @@ class ClientApiKey(models.Model):
         return f'{self.user.username} - {self.prefix}'
 
 USERDETAILS_COLUMN_MAX_LENGTHS = {
+    # Keep ordinary VARCHAR columns compact so the UserDetails row stays
+    # below MySQL's 8 KB inline-row limit when utf8mb4 is used. Long address
+    # and document-reference fields are listed in USERDETAILS_TEXT_COLUMNS.
     'clientcode': 50,
-    'pan': 50,
-    'fathername': 50,
-    'mothername': 50,
-    'mobile': 50,
+    'pan': 10,
+    'fathername': 25,
+    'mothername': 25,
+    'mobile': 10,
     'email': 50,
-    'account_holder_type': 50,
-    'addressline1': 50,
-    'addressline2': 50,
-    'addressline3': 50,
-    'networth': 50,
-    'modeoftrading': 50,
-    'mode_of_account': 50,
-    'transaction_type': 50,
-    'dpid': 50,
-    'dptype': 50,
-    'education': 50,
-    'bse_cash': 50,
-    'bse_currency': 50,
-    'bse_fo': 50,
-    'bse_slbm': 50,
-    'mcx': 50,
-    'nse_cash': 50,
-    'nse_currency': 50,
-    'nse_fo': 50,
-    'nse_slbm': 50,
-    'networth_date': 50,
+    'account_holder_type': 15,
+    'networth': 10,
+    'modeoftrading': 7,
+    'mode_of_account': 10,
+    'transaction_type': 20,
+    'dpid': 20,
+    'dptype': 10,
+    'education': 20,
+    'bse_cash': 5,
+    'bse_currency': 5,
+    'bse_fo': 5,
+    'bse_slbm': 5,
+    'mcx': 5,
+    'nse_cash': 5,
+    'nse_currency': 5,
+    'nse_fo': 5,
+    'nse_slbm': 5,
+    'networth_date': 10,
     # Document references may contain longer relative paths or URLs.
-    'uploadpan': 255,
-    'uploadsignature': 255,
-    'pdf_file_kra': 255,
-    'aadhar_xml': 255,
-    'annual_income': 50,
-    'occupation': 50,
-    'aadhaar_address': 255,
-    'marital_status': 50,
-    'bankname': 50,
-    'ifsc': 50,
-    'micr': 50,
-    'branchname': 50,
-    'bankaddress': 50,
-    'bank_city': 50,
-    'bank_state': 50,
-    'bank_pincode': 50,
-    'bankaccountnumber': 50,
-    'accounttype': 50,
-    'activestatus': 50,
-    'aadhaar_name': 50,
-    'aadhaar_dob': 50,
-    'aadhaar_gender': 50,
-    'aadhaar_house': 50,
-    'aadhaar_dist': 50,
-    'aadhaar_state': 50,
-    'aadhaar_country': 50,
-    'aadhaar_image': 255,
-    'aadhaar_file': 255,
-    'aadhaar_pincode': 50,
-    'aadhaar_no': 50,
-    'isdppoa': 50,
-    'cdslresponse': 50,
-    'annual_income_date': 50,
-    'nominee_check': 50,
-    'bsda_flag': 50,
-    'pledge_standing_instruction': 50,
+    'annual_income': 15,
+    'occupation': 20,
+    'marital_status': 10,
+    'bankname': 20,
+    'ifsc': 11,
+    'micr': 9,
+    'branchname': 20,
+    'bank_city': 20,
+    'bank_state': 20,
+    'bank_pincode': 10,
+    'bankaccountnumber': 20,
+    'accounttype': 15,
+    'activestatus': 1,
+    'aadhaar_name': 25,
+    'aadhaar_dob': 10,
+    'aadhaar_gender': 10,
+    'aadhaar_dist': 20,
+    'aadhaar_state': 20,
+    'aadhaar_country': 20,
+    'aadhaar_pincode': 10,
+    'aadhaar_no': 12,
+    'isdppoa': 5,
+    'annual_income_date': 10,
+    'nominee_check': 3,
+    'bsda_flag': 10,
+    'pledge_standing_instruction': 5,
+    'mse_status': 20,
+    'mse_request_no': 50,
+    'kra_sftp_response': 255,
 }
 
-USERDETAILS_COLUMN_MAX_LENGTHS.update({
-    f'nominee{number}_{suffix}': 50
-    for number in (1, 2, 3)
-    for suffix in (
-        'firstname', 'middlename', 'lastname', 'pan', 'dob', 'relation', 'address1', 'address2',
-        'city', 'state', 'country', 'pincode', 'mobile', 'email', 'percentage',
-    )
-})
+for number in (1, 2, 3):
+    USERDETAILS_COLUMN_MAX_LENGTHS.update({
+        f'nominee{number}_firstname': 25,
+        f'nominee{number}_middlename': 25,
+        f'nominee{number}_lastname': 25,
+        f'nominee{number}_pan': 10,
+        f'nominee{number}_dob': 10,
+        f'nominee{number}_relation': 20,
+        f'nominee{number}_city': 20,
+        f'nominee{number}_state': 20,
+        f'nominee{number}_country': 20,
+        f'nominee{number}_pincode': 6,
+        f'nominee{number}_mobile': 10,
+        f'nominee{number}_email': 50,
+        f'nominee{number}_percentage': 6,
+    })
 
 # Keep address values and document URL/reference values as TEXT because they
 # can be longer than normal VARCHAR fields. All other UserDetails string
@@ -208,19 +209,23 @@ USERDETAILS_MANDATORY_COLUMNS = {
 
 
 def _userdetailstr(col, **kw):
-    kw.setdefault('max_length', USERDETAILS_COLUMN_MAX_LENGTHS[col])
     db_column = kw.pop('db_column', col)
     required = col in USERDETAILS_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
+    null = kw.pop('null', not required)
+    blank = kw.pop('blank', not required)
     # Keep max_length validation in Django.  Only selected long/repeated
     # values use TEXT to avoid making every UserDetails column a TEXT column.
-    field_class = (
-        models.TextField
-        if col in USERDETAILS_TEXT_COLUMNS and not (kw.get('unique') or kw.get('db_index'))
-        else models.CharField
-    )
-    return field_class(null=not required, blank=not required, db_column=db_column, **kw)
+    use_text = col in USERDETAILS_TEXT_COLUMNS and not (kw.get('unique') or kw.get('db_index'))
+    field_class = models.TextField if use_text else models.CharField
+    if use_text:
+        # TextField has no VARCHAR length requirement. Do not pass a
+        # max_length value, so document/address text remains unrestricted.
+        kw.pop('max_length', None)
+    else:
+        kw.setdefault('max_length', USERDETAILS_COLUMN_MAX_LENGTHS[col])
+    return field_class(null=null, blank=blank, db_column=db_column, **kw)
 
 
 def _userdetailspk(col):
@@ -396,18 +401,11 @@ class UserDetails(models.Model):
     ckyc_push_at = models.DateTimeField(null=True, blank=True, db_column='ckyc_push_at')
     kra_push_at = models.DateTimeField(null=True, blank=True, db_column='kra_push_at')
     nse_push_at = models.DateTimeField(null=True, blank=True, db_column='nse_push_at')
-    mse_request_no = models.CharField(max_length=100, null=False, blank=True, default='', db_column='mse_request_no')
     mse_in_process = models.BooleanField(null=False, blank=True, default=False, db_column='mse_in_process')
-    mse_status = models.CharField(max_length=30, null=False, blank=True, default='', db_column='mse_status')
+    mse_request_no = _userdetailstr('mse_request_no', null=False, blank=True, default='')
+    mse_status = _userdetailstr('mse_status', null=False, blank=True, default='')
+    kra_sftp_response = _userdetailstr('kra_sftp_response', null=False, blank=True, default='')
 
-    kra_sftp_response = models.CharField(
-        max_length=255,
-        null=False,
-        blank=True,
-        default='',
-        db_column='kra_sftp_response',
-    )
-    
     class Meta:
         db_table = 'userdetails'
 
