@@ -15,4 +15,3 @@ npm-debug.log*
 backend/logs/
 
 backend/staticfiles/
-backend/db_structure/migrations/
