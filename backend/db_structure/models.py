@@ -18,9 +18,9 @@ class UserProfile(models.Model):
         related_name='profile',
         db_column='user_id',
     )
-    company_name = models.CharField(max_length=255, blank=True, default='')
-    phone = models.CharField(max_length=20, blank=True, default='')
-    address = models.TextField(blank=True, default='')
+    company_name = models.CharField(max_length=100, blank=True, default='')
+    phone = models.CharField(max_length=10, blank=True, default='')
+    address = models.CharField(max_length=150, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -632,7 +632,7 @@ def _bsestr(col, **kw):
     required = col in BSE_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.CharField(null=not required, blank=not required, db_column=db_column, **kw)
+    return models.TextField(null=not required, blank=not required, db_column=db_column, **kw)
 
 def _bsepk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
@@ -1311,7 +1311,7 @@ def _msepk(col):
 def _msestr(col, **kw):
     kw.setdefault('max_length', MSE_COLUMN_MAX_LENGTHS[col])
     db_column = kw.pop('db_column', col)
-    return models.CharField(null=True, blank=True, db_column=db_column, **kw)
+    return models.TextField(null=True, blank=True, db_column=db_column, **kw)
 
 
 class Mse(models.Model):
@@ -1379,7 +1379,7 @@ def _nsestr(col, **kw):
     required = col in NSE_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.CharField(null=not required, blank=not required, db_column=db_column, **kw)
+    return models.TextField(null=not required, blank=not required, db_column=db_column, **kw)
 
 
 class Nse(models.Model):
@@ -1834,7 +1834,7 @@ def _krastr(col, **kw):
     required = col in KRA_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    field_class = models.TextField if KRA_COLUMN_MAX_LENGTHS[col] >= 255 else models.CharField
+    field_class = models.TextField
     return field_class(null=not required, blank=not required, db_column=db_column, **kw)
 
 
@@ -2422,7 +2422,7 @@ def _cdslstr(col, **kw):
     if required:
         kw.setdefault('default', '')
         kw.setdefault('db_default', '')
-    return models.CharField(null=not required,blank=not required,db_column=db_column,**kw)
+    return models.TextField(null=not required,blank=not required,db_column=db_column,**kw)
 
 class Cdsl(models.Model):
     """Configurable default values for CDSL BO opening and modification files."""
@@ -3031,10 +3031,13 @@ NSDL_MANDATORY_COLUMNS = frozenset(
 NSDL_COLUMN_MAX_LENGTHS = {column: 50 for column in NSDL_COLUMNS}
 
 def _nsdlstr(col, **kw):
+    # NSDL stores a wide provider payload with many configurable columns.
+    # Keep Django's max-length validation, but use TEXT in MySQL so the
+    # combined inline VARCHAR row does not exceed InnoDB's 8 KB limit.
     kw.setdefault('max_length', NSDL_COLUMN_MAX_LENGTHS[col])
     db_column = kw.pop('db_column', col)
     required = col in NSDL_MANDATORY_COLUMNS
-    return models.CharField(
+    return models.TextField(
         null=not required,
         blank=not required,
         **({'default': ''} if required else {}),
