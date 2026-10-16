@@ -1302,6 +1302,15 @@ MSE_COLUMNS = (
 MSE_COLUMN_MAX_LENGTHS = {column: 20 for column in MSE_COLUMNS}
 
 
+class MseAsciiCharField(models.CharField):
+    """Compact ASCII VARCHAR used by the wide MSE provider table."""
+
+    def db_type(self, connection):
+        if connection.vendor == 'mysql':
+            return f'varchar({self.max_length}) CHARACTER SET ascii'
+        return super().db_type(connection)
+
+
 def _msepk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
 
@@ -1309,7 +1318,7 @@ def _msepk(col):
 def _msestr(col, **kw):
     kw.setdefault('max_length', MSE_COLUMN_MAX_LENGTHS[col])
     db_column = kw.pop('db_column', col)
-    return models.TextField(null=True, blank=True, db_column=db_column, **kw)
+    return MseAsciiCharField(null=True, blank=True, db_column=db_column, **kw)
 
 
 class Mse(models.Model):
