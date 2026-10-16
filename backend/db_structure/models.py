@@ -211,9 +211,11 @@ def _userdetailstr(col, **kw):
     # VARCHAR because MySQL cannot create a normal index on unrestricted TEXT.
     use_text = not (kw.get('unique') or kw.get('db_index'))
     field_class = models.TextField if use_text else models.CharField
-    # TextField max_length is retained for Django validation; on MySQL the
-    # database type remains TEXT/LONGTEXT rather than VARCHAR.
-    kw.setdefault('max_length', USERDETAILS_COLUMN_MAX_LENGTHS[col])
+    # Retain max_length for fields that have a configured validation limit;
+    # long text fields without an entry remain unrestricted TextFields.
+    max_length = USERDETAILS_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     return field_class(null=null, blank=blank, db_column=db_column, **kw)
 
 
