@@ -69,9 +69,6 @@ def _prepare_mysql_userdetails_table(connection, schema_editor, table):
     """
     quote_name = schema_editor.quote_name
     with connection.cursor() as cursor:
-        cursor.execute(
-            f'ALTER TABLE {quote_name(table)} ENGINE=InnoDB ROW_FORMAT=DYNAMIC'
-        )
         descriptions = connection.introspection.get_table_description(cursor, table)
         constraints = connection.introspection.get_constraints(cursor, table)
 
@@ -94,11 +91,11 @@ def _prepare_mysql_userdetails_table(connection, schema_editor, table):
             f'MODIFY COLUMN {quote_name(description.name)} TEXT {null_sql}'
         )
 
-    if modifications:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f'ALTER TABLE {quote_name(table)} ' + ', '.join(modifications)
-            )
+    # Do this as one table rebuild.  Rebuilding to DYNAMIC first can itself
+    # fail with error 1118 while the old VARCHAR layout is still present.
+    clauses = ['ENGINE=InnoDB', 'ROW_FORMAT=DYNAMIC', *modifications]
+    with connection.cursor() as cursor:
+        cursor.execute(f'ALTER TABLE {quote_name(table)} ' + ', '.join(clauses))
 
 
 def add_missing_nominee_columns(apps, schema_editor):

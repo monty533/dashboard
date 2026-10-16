@@ -1580,7 +1580,7 @@ class BseStarMfCredentials(models.Model):
     environment = models.CharField(max_length=10, default='uat')
     MemberId = models.CharField(max_length=50, blank=True, default='')
     UserId = models.CharField(max_length=50, blank=True, default='')
-    Password = models.CharField(max_length=255, blank=True, default='')
+    Password = models.CharField(max_length=50, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True, db_column='created_at')
     updated_at = models.DateTimeField(auto_now=True, db_column='updated_at')
 
@@ -1677,7 +1677,7 @@ class CkycStateCodeMaster(models.Model):
     """Editable CKYC state-name to state-code mappings."""
 
     id = models.BigAutoField(primary_key=True, db_column='id')
-    state_name = models.CharField(max_length=100, unique=True, db_column='state_name')
+    state_name = models.CharField(max_length=50, unique=True, db_column='state_name')
     state_code = models.CharField(max_length=10, db_column='state_code')
     created_at = models.DateTimeField(auto_now_add=True, db_column='created_at')
     updated_at = models.DateTimeField(auto_now=True, db_column='updated_at')
@@ -1752,7 +1752,7 @@ KRA_COLUMN_MAX_LENGTHS = {
     'APP_PER_ADD_DT': 20,
     'APP_INCOME': 50,
     'APP_OCC': 50,
-    'APP_OTH_OCC': 100,
+    'APP_OTH_OCC': 50,
     'APP_POL_CONN': 5,
     'APP_DOC_PROOF': 20,
     'APP_INTERNAL_REF': 50,
@@ -1760,27 +1760,27 @@ KRA_COLUMN_MAX_LENGTHS = {
     'APP_MAR_STATUS': 10,
     'APP_NETWRTH': 30,
     'APP_NETWORTH_DT': 20,
-    'APP_INCORP_PLC': 100,
-    'APP_OTHERINFO': 500,
+    'APP_INCORP_PLC': 50,
+    'APP_OTHERINFO': 100,
     'APP_FILLER1': 10,
     'APP_FILLER2': 10,
     'APP_FILLER3': 10,
-    'APP_IPV_NAME': 150,
-    'APP_IPV_DESG': 100,
-    'APP_IPV_ORGAN': 100,
+    'APP_IPV_NAME': 50,
+    'APP_IPV_DESG': 50,
+    'APP_IPV_ORGAN': 50,
     'APP_KYC_MODE': 5,
     'APP_VER_NO': 20,
     'APP_VID_NO': 20,
-    'APP_UID_TOKEN': 100,
-    'APP_AUTH_NAME': 150,
-    'APP_AUTH_EMAIL': 100,
-    'APP_AUTH_EMAIL1': 100,
-    'APP_AUTH_EMAIL2': 100,
+    'APP_UID_TOKEN': 50 ,
+    'APP_AUTH_NAME': 50,
+    'APP_AUTH_EMAIL': 50,
+    'APP_AUTH_EMAIL1': 50,
+    'APP_AUTH_EMAIL2': 50,
     'APP_AUTH_MOBILE': 24,
     'APP_AUTH_FPICONSENT': 1,
     'APP_AUTH_UBOCONSENT': 1,
     'APP_FATCA_APPLICABLE_FLAG': 1,
-    'APP_FATCA_BIRTH_PLACE': 100,
+    'APP_FATCA_BIRTH_PLACE': 50,
     'APP_FATCA_BIRTH_COUNTRY': 10,
     'APP_FATCA_COUNTRY_RES': 10,
     'APP_FATCA_COUNTRY_CITYZENSHIP': 10,
@@ -1921,14 +1921,14 @@ class KraCredentials(models.Model):
     api_key = models.CharField(max_length=255, blank=True, default='')
     username = models.CharField(max_length=100, blank=True, default='')
     poscode = models.CharField(max_length=50, blank=True, default='')
-    cvlkra_password = models.CharField(max_length=255, blank=True, default='')
+    cvlkra_password = models.CharField(max_length=100, blank=True, default='')
     aes_key = models.CharField(max_length=255, blank=True, default='')
     # Optional CVL KRA SFTP credentials used for PDF/XML document upload.
-    sftp_host = models.CharField(max_length=255, blank=True, default='')
+    sftp_host = models.CharField(max_length=100, blank=True, default='')
     sftp_port = models.CharField(max_length=10, blank=True, default='22')
     sftp_username = models.CharField(max_length=100, blank=True, default='')
-    sftp_password = models.CharField(max_length=255, blank=True, default='')
-    sftp_base_path = models.CharField(max_length=255, blank=True, default='.')
+    sftp_password = models.CharField(max_length=100, blank=True, default='')
+    sftp_base_path = models.CharField(max_length=100, blank=True, default='.')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1953,7 +1953,7 @@ class CkycCredentials(models.Model):
     ckyc_base_url = models.CharField(max_length=255, blank=True, default='')
     auth_api_key = models.CharField(max_length=255, blank=True, default='')
     username = models.CharField(max_length=100, blank=True, default='')
-    password = models.CharField(max_length=255, blank=True, default='')
+    password = models.CharField(max_length=100, blank=True, default='')
     ficode_ckyc = models.CharField(max_length=50, blank=True, default='')
     region_or_branch_code_ckyc = models.CharField(max_length=50, blank=True, default='')
     userid_ckyc = models.CharField(max_length=50, blank=True, default='')
@@ -1966,11 +1966,11 @@ class CkycCredentials(models.Model):
     # Optional encrypted CKYC search/download endpoints and signing keys.
     # The flat-file push flow continues to use the fields above.
     verify_url = models.CharField(max_length=500, blank=True, default='')
-    download_url = models.CharField(max_length=500, blank=True, default='')
-    verify_otp_url = models.CharField(max_length=500, blank=True, default='')
-    fi_private_key_path = models.CharField(max_length=500, blank=True, default='')
-    fi_public_key_path = models.CharField(max_length=500, blank=True, default='')
-    cersai_public_key_path = models.CharField(max_length=500, blank=True, default='')
+    download_url = models.CharField(max_length=255, blank=True, default='')
+    verify_otp_url = models.CharField(max_length=255, blank=True, default='')
+    fi_private_key_path = models.CharField(max_length=255, blank=True, default='')
+    fi_public_key_path = models.CharField(max_length=255, blank=True, default='')
+    cersai_public_key_path = models.CharField(max_length=255, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
