@@ -92,8 +92,6 @@ USERDETAILS_COLUMN_MAX_LENGTHS = {
     'ifsc': 11,
     'micr': 9,
     'branchname': 20,
-    'bank_city': 20,
-    'bank_state': 20,
     'bank_pincode': 10,
     'bankaccountnumber': 20,
     'accounttype': 15,
@@ -101,9 +99,6 @@ USERDETAILS_COLUMN_MAX_LENGTHS = {
     'aadhaar_name': 25,
     'aadhaar_dob': 10,
     'aadhaar_gender': 10,
-    'aadhaar_dist': 20,
-    'aadhaar_state': 20,
-    'aadhaar_country': 20,
     'aadhaar_pincode': 10,
     'aadhaar_no': 12,
     'isdppoa': 5,
@@ -124,9 +119,6 @@ for number in (1, 2, 3):
         f'nominee{number}_pan': 10,
         f'nominee{number}_dob': 10,
         f'nominee{number}_relation': 20,
-        f'nominee{number}_city': 20,
-        f'nominee{number}_state': 20,
-        f'nominee{number}_country': 20,
         f'nominee{number}_pincode': 6,
         f'nominee{number}_mobile': 10,
         f'nominee{number}_email': 50,
@@ -140,12 +132,13 @@ USERDETAILS_TEXT_COLUMNS = {
     'addressline1', 'addressline2', 'addressline3',
     'uploadpan', 'uploadsignature', 'pdf_file_kra', 'aadhar_xml',
     'aadhaar_house', 'aadhaar_image', 'aadhaar_file', 'aadhaar_address',
-    'bankaddress',
+    'bankaddress', 'bank_city', 'bank_state',
+    'aadhaar_dist', 'aadhaar_state', 'aadhaar_country',
     *{
         f'nominee{number}_{suffix}'
         for number in (1, 2, 3)
         for suffix in (
-            'address1', 'address2',
+            'address1', 'address2', 'city', 'state', 'country',
         )
     },
 }
