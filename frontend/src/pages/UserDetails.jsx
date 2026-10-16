@@ -13,6 +13,8 @@ const PUSH_PERMISSION_FIELDS = new Set([
   'bse_push',
   'bsestarmf_push', 'nse_push', 'nsdl_push', 'cdsl_push',
   'mcx_push', 'mse_push', 'ckyc_push', 'kra_push',
+  'bse_cash_push', 'bse_currency_push', 'bse_fo_push', 'bse_slbm_push',
+  'nse_cash_push', 'nse_currency_push', 'nse_fo_push', 'nse_slbm_push',
 ]);
 
 const PUSH_TIMESTAMP_LABELS = {
@@ -50,6 +52,23 @@ const CONDITIONAL_OPTIONS = {
   mse_push: ['true', 'false'],
   ckyc_push: ['true', 'false'],
   kra_push: ['true', 'false'],
+  bse_cash: ['true', 'false'],
+  bse_currency: ['true', 'false'],
+  bse_fo: ['true', 'false'],
+  bse_slbm: ['true', 'false'],
+  mcx: ['true', 'false'],
+  nse_cash: ['true', 'false'],
+  nse_currency: ['true', 'false'],
+  nse_fo: ['true', 'false'],
+  nse_slbm: ['true', 'false'],
+  bse_cash_push: ['true', 'false'],
+  bse_currency_push: ['true', 'false'],
+  bse_fo_push: ['true', 'false'],
+  bse_slbm_push: ['true', 'false'],
+  nse_cash_push: ['true', 'false'],
+  nse_currency_push: ['true', 'false'],
+  nse_fo_push: ['true', 'false'],
+  nse_slbm_push: ['true', 'false'],
   nominee_check: ['yes', 'no'],
 };
 
@@ -71,6 +90,23 @@ const CONDITIONAL_OPTION_LABELS = {
   mse_push: { true: 'Allow MSE push', false: 'Do not push MSE' },
   ckyc_push: { true: 'Allow CKYC push', false: 'Do not push CKYC' },
   kra_push: { true: 'Allow KRA push', false: 'Do not push KRA' },
+  bse_cash: { true: 'Enabled', false: 'Disabled' },
+  bse_currency: { true: 'Enabled', false: 'Disabled' },
+  bse_fo: { true: 'Enabled', false: 'Disabled' },
+  bse_slbm: { true: 'Enabled', false: 'Disabled' },
+  mcx: { true: 'Enabled', false: 'Disabled' },
+  nse_cash: { true: 'Enabled', false: 'Disabled' },
+  nse_currency: { true: 'Enabled', false: 'Disabled' },
+  nse_fo: { true: 'Enabled', false: 'Disabled' },
+  nse_slbm: { true: 'Enabled', false: 'Disabled' },
+  bse_cash_push: { true: 'Allow push', false: 'Do not push' },
+  bse_currency_push: { true: 'Allow push', false: 'Do not push' },
+  bse_fo_push: { true: 'Allow push', false: 'Do not push' },
+  bse_slbm_push: { true: 'Allow push', false: 'Do not push' },
+  nse_cash_push: { true: 'Allow push', false: 'Do not push' },
+  nse_currency_push: { true: 'Allow push', false: 'Do not push' },
+  nse_fo_push: { true: 'Allow push', false: 'Do not push' },
+  nse_slbm_push: { true: 'Allow push', false: 'Do not push' },
 };
 
 const DATE_FIELDS = new Set([
@@ -92,6 +128,8 @@ const FIELD_ORDER = [
   'clientcode', 'pan', 'fathername', 'mothername', 'mobile', 'email', 'account_holder_type',
   'addressline1', 'addressline2', 'addressline3',
   'networth', 'networth_date', 'modeoftrading', 'mode_of_account', 'transaction_type', 'dpid', 'dptype', 'education',
+  'bse_cash', 'bse_cash_push', 'bse_currency', 'bse_currency_push', 'bse_fo', 'bse_fo_push', 'bse_slbm', 'bse_slbm_push',
+  'mcx', 'nse_cash', 'nse_cash_push', 'nse_currency', 'nse_currency_push', 'nse_fo', 'nse_fo_push', 'nse_slbm', 'nse_slbm_push',
   'bse_push', 'bsestarmf_push', 'nse_push', 'nsdl_push', 'cdsl_push', 'mcx_push', 'mse_push', 'ckyc_push', 'kra_push',
   'uploadpan', 'uploadsignature', 'pdf_file_kra', 'aadhar_xml',
   'annual_income', 'annual_income_date', 'occupation', 'marital_status',
@@ -129,6 +167,23 @@ const FIELD_LABELS = {
   mse_push: 'MSE push permission',
   ckyc_push: 'CKYC push permission',
   kra_push: 'KRA push permission',
+  bse_cash: 'BSE cash segment',
+  bse_currency: 'BSE currency segment',
+  bse_fo: 'BSE F&O segment',
+  bse_slbm: 'BSE SLBM segment',
+  mcx: 'MCX segment',
+  nse_cash: 'NSE cash segment',
+  nse_currency: 'NSE currency segment',
+  nse_fo: 'NSE F&O segment',
+  nse_slbm: 'NSE SLBM segment',
+  bse_cash_push: 'BSE cash push permission',
+  bse_currency_push: 'BSE currency push permission',
+  bse_fo_push: 'BSE F&O push permission',
+  bse_slbm_push: 'BSE SLBM push permission',
+  nse_cash_push: 'NSE cash push permission',
+  nse_currency_push: 'NSE currency push permission',
+  nse_fo_push: 'NSE F&O push permission',
+  nse_slbm_push: 'NSE SLBM push permission',
   aadhaar_name: 'Aadhaar name',
   aadhaar_dob: 'Aadhaar date of birth',
   aadhaar_dist: 'Aadhaar district',
@@ -183,6 +238,12 @@ const SECTION_CONFIG = [
     title: 'Provider push dates',
     description: 'Optional date and time recorded for each provider push.',
     matches: name => PUSH_TIMESTAMP_NAMES.has(name),
+  },
+  {
+    id: 'exchange',
+    title: 'Exchange',
+    description: 'Configure exchange segments and exchange push permissions.',
+    matches: name => LEGACY_SEGMENT_FIELDS.has(name),
   },
   {
     id: 'documents',
@@ -279,7 +340,6 @@ function sortFields(fields) {
     .filter(field => (
       field?.name
       && !READ_ONLY_FIELDS.has(field.name)
-      && !LEGACY_SEGMENT_FIELDS.has(field.name)
     ))
     .sort((left, right) => (order.get(left.name) ?? 999) - (order.get(right.name) ?? 999));
 }
