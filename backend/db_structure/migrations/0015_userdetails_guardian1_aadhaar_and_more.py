@@ -58,6 +58,49 @@ def _nominee_field(name):
     )
 
 
+def _prepare_mysql_userdetails_table(connection, schema_editor, table):
+    """Make the legacy wide table safe for additional nullable fields.
+
+    The model keeps its existing CharField definitions, so application-level
+    validation and behaviour do not change.  MySQL stores unindexed legacy
+    VARCHAR values as TEXT here to keep them off the clustered row.  Indexed
+    columns (especially the unique clientcode) are left untouched because
+    MySQL cannot index a TEXT column without a prefix.
+    """
+    quote_name = schema_editor.quote_name
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f'ALTER TABLE {quote_name(table)} ENGINE=InnoDB ROW_FORMAT=DYNAMIC'
+        )
+        descriptions = connection.introspection.get_table_description(cursor, table)
+        constraints = connection.introspection.get_constraints(cursor, table)
+
+    indexed_columns = {
+        column.lower()
+        for constraint in constraints.values()
+        if constraint.get('index') or constraint.get('unique') or constraint.get('primary_key')
+        for column in constraint.get('columns', ())
+    }
+    modifications = []
+    for description in descriptions:
+        field_type = connection.introspection.get_field_type(
+            description.type_code,
+            description,
+        )
+        if field_type != 'CharField' or description.name.lower() in indexed_columns:
+            continue
+        null_sql = 'NOT NULL' if description.null_ok is False else 'NULL'
+        modifications.append(
+            f'MODIFY COLUMN {quote_name(description.name)} TEXT {null_sql}'
+        )
+
+    if modifications:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'ALTER TABLE {quote_name(table)} ' + ', '.join(modifications)
+            )
+
+
 def add_missing_nominee_columns(apps, schema_editor):
     model = apps.get_model('db_structure', 'UserDetails')
     connection = schema_editor.connection
@@ -69,10 +112,7 @@ def add_missing_nominee_columns(apps, schema_editor):
     # variable-length values off-page, while preserving the Django field
     # definitions and the existing application behaviour.
     if connection.vendor == 'mysql':
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f'ALTER TABLE {schema_editor.quote_name(table)} ROW_FORMAT=DYNAMIC'
-            )
+        _prepare_mysql_userdetails_table(connection, schema_editor, table)
 
     with connection.cursor() as cursor:
         descriptions = connection.introspection.get_table_description(cursor, table)
