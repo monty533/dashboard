@@ -57,9 +57,8 @@ class ClientApiKey(models.Model):
         return f'{self.user.username} - {self.prefix}'
 
 USERDETAILS_COLUMN_MAX_LENGTHS = {
-    # Keep ordinary VARCHAR columns compact so the UserDetails row stays
-    # below MySQL's 8 KB inline-row limit when utf8mb4 is used. Long address
-    # and document-reference fields are listed in USERDETAILS_TEXT_COLUMNS.
+    # Keep max_length values for Django validation. UserDetails string
+    # columns are stored as TEXT below to avoid MySQL's 8 KB inline-row limit.
     'clientcode': 50,
     'pan': 10,
     'fathername': 25,
@@ -125,9 +124,9 @@ for number in (1, 2, 3):
         f'nominee{number}_percentage': 6,
     })
 
-# Keep address values and document URL/reference values as TEXT because they
-# can be longer than normal VARCHAR fields. All other UserDetails string
-# fields remain VARCHAR through _userdetailstr().
+# Document/address fields originally identified as long values. The helper
+# below now stores every non-indexed UserDetails string as TEXT; this set is
+# retained as documentation for those fields.
 USERDETAILS_TEXT_COLUMNS = {
     'addressline1', 'addressline2', 'addressline3',
     'uploadpan', 'uploadsignature', 'pdf_file_kra', 'aadhar_xml',
@@ -208,16 +207,13 @@ def _userdetailstr(col, **kw):
         kw.setdefault('default', '')
     null = kw.pop('null', not required)
     blank = kw.pop('blank', not required)
-    # Keep max_length validation in Django.  Only selected long/repeated
-    # values use TEXT to avoid making every UserDetails column a TEXT column.
-    use_text = col in USERDETAILS_TEXT_COLUMNS and not (kw.get('unique') or kw.get('db_index'))
+    # Store every non-indexed string as TEXT. Indexed/unique fields must stay
+    # VARCHAR because MySQL cannot create a normal index on unrestricted TEXT.
+    use_text = not (kw.get('unique') or kw.get('db_index'))
     field_class = models.TextField if use_text else models.CharField
-    if use_text:
-        # TextField has no VARCHAR length requirement. Do not pass a
-        # max_length value, so document/address text remains unrestricted.
-        kw.pop('max_length', None)
-    else:
-        kw.setdefault('max_length', USERDETAILS_COLUMN_MAX_LENGTHS[col])
+    # TextField max_length is retained for Django validation; on MySQL the
+    # database type remains TEXT/LONGTEXT rather than VARCHAR.
+    kw.setdefault('max_length', USERDETAILS_COLUMN_MAX_LENGTHS[col])
     return field_class(null=null, blank=blank, db_column=db_column, **kw)
 
 
