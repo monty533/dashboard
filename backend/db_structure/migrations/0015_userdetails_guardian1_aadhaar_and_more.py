@@ -63,6 +63,17 @@ def add_missing_nominee_columns(apps, schema_editor):
     connection = schema_editor.connection
     table = model._meta.db_table
 
+    # ``userdetails`` is already a wide legacy table.  MySQL's COMPACT row
+    # format keeps too much variable-length data inline and can reject the
+    # first nominee/guardian column with error 1118.  DYNAMIC stores long
+    # variable-length values off-page, while preserving the Django field
+    # definitions and the existing application behaviour.
+    if connection.vendor == 'mysql':
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f'ALTER TABLE {schema_editor.quote_name(table)} ROW_FORMAT=DYNAMIC'
+            )
+
     with connection.cursor() as cursor:
         descriptions = connection.introspection.get_table_description(cursor, table)
 

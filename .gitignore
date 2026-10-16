@@ -4,7 +4,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# .env
+.env
 env/
 
 frontend/node_modules/
@@ -15,3 +15,4 @@ npm-debug.log*
 backend/logs/
 
 backend/staticfiles/
+backend/db_structure/migrations/
