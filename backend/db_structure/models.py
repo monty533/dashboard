@@ -132,6 +132,23 @@ USERDETAILS_COLUMN_MAX_LENGTHS.update({
     )
 })
 
+# Keep address values and document URL/reference values as TEXT because they
+# can be longer than normal VARCHAR fields. All other UserDetails string
+# fields remain VARCHAR through _userdetailstr().
+USERDETAILS_TEXT_COLUMNS = {
+    'addressline1', 'addressline2', 'addressline3',
+    'uploadpan', 'uploadsignature', 'pdf_file_kra', 'aadhar_xml',
+    'aadhaar_house', 'aadhaar_image', 'aadhaar_file', 'aadhaar_address',
+    'bankaddress',
+    *{
+        f'nominee{number}_{suffix}'
+        for number in (1, 2, 3)
+        for suffix in (
+            'address1', 'address2',
+        )
+    },
+}
+
 USERDETAILS_MANDATORY_COLUMNS = {
     'clientcode',
     'aadhaar_name',
@@ -196,7 +213,14 @@ def _userdetailstr(col, **kw):
     required = col in USERDETAILS_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.CharField(null=not required,blank=not required,db_column=db_column,**kw)
+    # Keep max_length validation in Django.  Only selected long/repeated
+    # values use TEXT to avoid making every UserDetails column a TEXT column.
+    field_class = (
+        models.TextField
+        if col in USERDETAILS_TEXT_COLUMNS and not (kw.get('unique') or kw.get('db_index'))
+        else models.CharField
+    )
+    return field_class(null=not required, blank=not required, db_column=db_column, **kw)
 
 
 def _userdetailspk(col):
