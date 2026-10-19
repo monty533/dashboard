@@ -18,7 +18,7 @@ class UserProfile(models.Model):
         related_name='profile',
         db_column='user_id',
     )
-    company_name = models.CharField(max_length=100, blank=True, default='')
+    company_name = models.CharField(max_length=50, blank=True, default='')
     phone = models.CharField(max_length=10, blank=True, default='')
     address = models.CharField(max_length=150, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -57,18 +57,17 @@ class ClientApiKey(models.Model):
         return f'{self.user.username} - {self.prefix}'
 
 USERDETAILS_COLUMN_MAX_LENGTHS = {
-    # Keep max_length values for Django validation. UserDetails string
-    # columns are stored as TEXT below to avoid MySQL's 8 KB inline-row limit.
-    'clientcode': 50,
+    # Keep max_length values for Django validation and VARCHAR columns.
+    'clientcode': 15,
     'pan': 10,
     'fathername': 25,
     'mothername': 25,
     'mobile': 10,
     'email': 50,
-    'account_holder_type': 15,
+    'account_holder_type': 12,
     'networth': 10,
     'modeoftrading': 7,
-    'mode_of_account': 10,
+    'mode_of_account': 7,
     'transaction_type': 20,
     'dpid': 20,
     'dptype': 10,
@@ -91,6 +90,8 @@ USERDETAILS_COLUMN_MAX_LENGTHS = {
     'ifsc': 11,
     'micr': 9,
     'branchname': 20,
+    'bank_city': 35,
+    'bank_state': 50,
     'bank_pincode': 10,
     'bankaccountnumber': 20,
     'accounttype': 15,
@@ -98,6 +99,9 @@ USERDETAILS_COLUMN_MAX_LENGTHS = {
     'aadhaar_name': 25,
     'aadhaar_dob': 10,
     'aadhaar_gender': 10,
+    'aadhaar_dist': 50,
+    'aadhaar_state': 50,
+    'aadhaar_country': 50,
     'aadhaar_pincode': 10,
     'aadhaar_no': 12,
     'isdppoa': 5,
@@ -107,7 +111,6 @@ USERDETAILS_COLUMN_MAX_LENGTHS = {
     'pledge_standing_instruction': 5,
     'mse_status': 20,
     'mse_request_no': 50,
-    'kra_sftp_response': 255,
 }
 
 for number in (1, 2, 3):
@@ -118,30 +121,31 @@ for number in (1, 2, 3):
         f'nominee{number}_pan': 10,
         f'nominee{number}_dob': 10,
         f'nominee{number}_relation': 20,
+        f'nominee{number}_city': 35,
+        f'nominee{number}_state': 50,
+        f'nominee{number}_country': 50,
         f'nominee{number}_pincode': 6,
         f'nominee{number}_mobile': 10,
         f'nominee{number}_email': 50,
         f'nominee{number}_percentage': 6,
     })
 
-# Document/address fields originally identified as long values. The helper
-# below now stores every non-indexed UserDetails string as TEXT; this set is
-# retained as documentation for those fields.
+# Document/address fields that should be stored as TEXT. Every other
+# UserDetails string field is stored as VARCHAR by the helper below.
 USERDETAILS_TEXT_COLUMNS = {
     'addressline1', 'addressline2', 'addressline3',
     'uploadpan', 'uploadsignature', 'pdf_file_kra', 'aadhar_xml',
     'aadhaar_house', 'aadhaar_image', 'aadhaar_file', 'aadhaar_address',
-    'bankaddress', 'bank_city', 'bank_state',
-    'aadhaar_dist', 'aadhaar_state', 'aadhaar_country',
+    'bankaddress',
+    'kra_sftp_response',
     *{
         f'nominee{number}_{suffix}'
         for number in (1, 2, 3)
         for suffix in (
-            'address1', 'address2', 'city', 'state', 'country',
+            'address1', 'address2',
         )
     },
 }
-
 USERDETAILS_MANDATORY_COLUMNS = {
     'clientcode',
     'aadhaar_name',
@@ -207,15 +211,18 @@ def _userdetailstr(col, **kw):
         kw.setdefault('default', '')
     null = kw.pop('null', not required)
     blank = kw.pop('blank', not required)
-    # Store every non-indexed string as TEXT. Indexed/unique fields must stay
-    # VARCHAR because MySQL cannot create a normal index on unrestricted TEXT.
-    use_text = not (kw.get('unique') or kw.get('db_index'))
+    # Only explicitly listed long/address/document fields use TEXT. Every
+    # other UserDetails string column is stored as VARCHAR with max_length.
+    use_text = col in USERDETAILS_TEXT_COLUMNS
     field_class = models.TextField if use_text else models.CharField
     # Retain max_length for fields that have a configured validation limit;
     # long text fields without an entry remain unrestricted TextFields.
     max_length = USERDETAILS_COLUMN_MAX_LENGTHS.get(col)
     if max_length is not None:
         kw.setdefault('max_length', max_length)
+    if field_class is models.TextField:
+        # MySQL does not allow DEFAULT values on TEXT/BLOB columns.
+        kw.pop('default', None)
     return field_class(null=null, blank=blank, db_column=db_column, **kw)
 
 
@@ -405,144 +412,115 @@ class UserDetails(models.Model):
 
 
 BSE_COLUMN_MAX_LENGTHS = {
-    'TRANSACTIONCODE': 50,
-    'CLIENTTYPE': 50,
-    'STATUS': 50,
-    'CATEGORY': 50,
-    'CLIENTCODE': 50,
-    'PANNO': 50,
-    'POLITICALEXPERSON': 50,
-    'ADDRESS1': 50,
-    'PERMNEQUALCORP': 50,
-    'ADDRESS2': 50,
-    'COUNTRY': 50,
-    'STATE': 50,
-    'CITY': 50,
-    'PINCODE': 50,
-    'TYPEOFSERVICE': 50,
-    'CONTACTDETAILS': 50,
-    'EMAIL': 50,
-    'MOBILENUMBER': 50,
-    'STDCODE': 50,
-    'PHONENO': 50,
-    'EQ_CPCODE': 50,
-    'EQCMID': 50,
-    'FNOCPCODE': 50,
-    'FNOCMID': 50,
-    'DEPOSITORYNAME1': 50,
-    'DEMANTID1': 50,
-    'DEPOSITORYPARTICIPANT1': 50,
-    'DEPOSITORYNAME2': 50,
-    'DEMANTID2': 50,
-    'DEPOSITORYPARTICIPANT2': 50,
-    'DEPOSITORYNAME3': 50,
-    'DEMANTID3': 50,
-    'DEPOSITORYPARTICIPANT3': 50,
-    'BANKNAME1': 50,
-    'ACCOUNTNO1': 50,
-    'BANKNAME2': 50,
-    'ACCOUNTNO2': 50,
-    'BANKNAME3': 50,
-    'ACCOUNTNO3': 50,
-    'CLIENTAGGREMENTDATE': 50,
-    'PROVIDEDETAILS': 50,
-    'INCOME': 50,
-    'INCOMEDATE': 50,
-    'NETWORTH': 50,
-    'NETWORTHDATE': 50,
-    'ISACTIVE': 50,
-    'UPDATEREASON': 50,
-    'FIRSTNAME': 50,
-    'MIDDLENAME': 50,
-    'LASTNAME': 50,
-    'AADHARCARDNO': 50,
-    'DATEOFBIRTH': 50,
-    'CLIENTNAME': 50,
-    'REGISTRATIONNO': 50,
-    'REGISTERINGAUTHORITY': 50,
-    'DATEOFREGISTRATION': 50,
-    'PLACEOFREGISTRATION': 50,
-    'WHETHERCORPORATE': 50,
-    'CINNO': 50,
-    'NUMBEROFDIRECTORS': 50,
-    'PARTNERS_KARTAUID': 50,
-    'PARTNERS_COPARCENERUID': 50,
-    'CONTACTPERSONNAME1': 50,
-    'CONTACTPERSONDESIGNATION1': 50,
-    'CONTACTPERSONADDRESS1': 50,
-    'CONTACTPERSONEMAIL1': 50,
-    'CONTACTPERSONPAN1': 50,
-    'CONTACTPERSONMOBILE1': 50,
-    'CONTACTPERSONNAME2': 50,
-    'CONTACTPERSONDESIGNATION2': 50,
-    'CONTACTPERSONADDRESS2': 50,
-    'CONTACTPERSONEMAIL2': 50,
-    'CONTACTPERSONPAN2': 50,
-    'CONTACTPERSONMOBILE2': 50,
-    'SERVERIP': 50,
-    'BATUSER': 50,
-    'CASH': 50,
-    'EQUITY_DERIVATIVE': 50,
-    'SLB': 50,
-    'CURRENCY': 50,
-    'DEBT': 50,
-    'ISPOA': 50,
-    'POAFORFUND': 50,
-    'POAFORSECURITY': 50,
-    'DATEOFPOAFORFUND': 50,
-    'DATEOFPOAFORSECURITY': 50,
-    'PERCOUNTRY': 50,
-    'PERSTATE': 50,
-    'PERCITY': 50,
-    'PERPINCODE': 50,
-    'CURRENCYCPCODE': 50,
-    'CURRENCYCMID': 50,
-    'ENROLLMENTNUMBER': 50,
-    'COMMDERIVATIVES': 50,
-    'OPTEDFORNOMINATION': 50,
-    'CUSTPANNO': 50,
-    'CUSTNAME': 50,
-    'CUSTADDRESS': 50,
-    'CUSTCOUNTRY': 50,
-    'CUSTSTATE': 50,
-    'CUSTCITY': 50,
-    'CUSTPINCODE': 50,
-    'CUSTMOBILENUMBER': 50,
-    'CUSTSTDCODE': 50,
-    'CUSTPHONENO': 50,
-    'CUSTEMAIL': 50,
-    'EGR': 50,
-    'BENEFICIALOWNACNTNO1': 50,
-    'BENEFICIALOWNACNTNO2': 50,
-    'BENEFICIALOWNACNTNO3': 50,
-    'OPTED_FOR_UPI': 50,
-    'BANKBRANCHIFSCCODE1': 50,
-    'PRIMARYORSECONDARYBANK1': 50,
-    'BANKBRANCHIFSCCODE2': 50,
-    'PRIMARYORSECONDARYBANK2': 50,
-    'BANKBRANCHIFSCCODE3': 50,
-    'PRIMARYORSECONDARYBANK3': 50,
-    'BANKBRANCHIFSCCODE4': 50,
-    'BANKNAME4': 50,
-    'ACCOUNTNO4': 50,
-    'PRIMARYORSECONDARYBANK4': 50,
-    'BANKBRANCHIFSCCODE5': 50,
-    'BANKNAME5': 50,
-    'ACCOUNTNO5': 50,
-    'PRIMARYORSECONDARYBANK5': 50,
-    'PRIMARYORSECONDARYDP1': 50,
-    'PRIMARYORSECONDARYDP2': 50,
-    'PRIMARYORSECONDARYDP3': 50,
-    'DEPOSITORYNAME4': 50,
-    'DEMANTID4': 50,
-    'BENEFICIALOWNACNTNO4': 50,
-    'PRIMARYORSECONDARYDP4': 50,
-    'DEPOSITORYNAME5': 50,
-    'DEMANTID5': 50,
-    'BENEFICIALOWNACNTNO5': 50,
-    'PRIMARYORSECONDARYDP5': 50,
-    'CLIENTNAMEDESCRIPTION': 50,
-    'DIRECTORDETAILS': 50,
+    'TRANSACTIONCODE': 1,
+    'CLIENTTYPE': 3,
+    'STATUS': 2,
+    'CATEGORY': 5,
+    'CLIENTCODE': 11,
+    'PANNO': 10,
+    'POLITICALEXPERSON': 1,
+    'PERMNEQUALCORP': 1,
+    'COUNTRY': 25,
+    'STATE': 25,
+    'CITY': 25,
+    'PINCODE': 10,
+    'TYPEOFSERVICE': 1,
+    'CONTACTDETAILS': 1,
+    'MOBILENUMBER': 10,
+    'STDCODE': 10,
+    'PHONENO': 15,
+    'EQ_CPCODE': 14,
+    'EQCMID': 5,
+    'FNOCPCODE': 14,
+    'FNOCMID': 5,
+    'DEPOSITORYNAME1': 4,
+    'DEMANTID1': 20,
+    'DEPOSITORYNAME2': 4,
+    'DEMANTID2': 20,
+    'DEPOSITORYNAME3': 4,
+    'DEMANTID3': 20,
+    'ACCOUNTNO1': 20,
+    'ACCOUNTNO2': 20,
+    'ACCOUNTNO3': 20,
+    'CLIENTAGGREMENTDATE': 10,
+    'PROVIDEDETAILS': 1,
+    'INCOME': 1,
+    'INCOMEDATE': 10,
+    'NETWORTH': 14,
+    'NETWORTHDATE': 10,
+    'ISACTIVE': 1,
+    'FIRSTNAME': 10,
+    'MIDDLENAME': 10,
+    'LASTNAME': 10,
+    'AADHARCARDNO': 12,
+    'DATEOFBIRTH': 10,
+    'DATEOFREGISTRATION': 10,
+    'WHETHERCORPORATE': 1,
+    'CINNO': 21,
+    'NUMBEROFDIRECTORS': 2,
+    'PARTNERS_KARTAUID': 10,
+    'PARTNERS_COPARCENERUID': 10,
+    'CONTACTPERSONPAN1': 10,
+    'CONTACTPERSONMOBILE1': 10,
+    'CONTACTPERSONPAN2': 10,
+    'CONTACTPERSONMOBILE2': 10,
+    'SERVERIP': 45,
+    'BATUSER': 10,
+    'CASH': 1,
+    'EQUITY_DERIVATIVE': 1,
+    'SLB': 1,
+    'CURRENCY': 1,
+    'DEBT': 1,
+    'ISPOA': 1,
+    'POAFORFUND': 1,
+    'POAFORSECURITY': 1,
+    'DATEOFPOAFORFUND': 10,
+    'DATEOFPOAFORSECURITY': 10,
+    'PERCOUNTRY': 25,
+    'PERSTATE': 25,
+    'PERCITY': 25,
+    'PERPINCODE': 10,
+    'CURRENCYCPCODE': 14,
+    'CURRENCYCMID': 5,
+    'ENROLLMENTNUMBER': 20,
+    'COMMDERIVATIVES': 1,
+    'OPTEDFORNOMINATION': 1,
+    'CUSTPANNO': 10,
+    'CUSTCOUNTRY': 25,
+    'CUSTSTATE': 25,
+    'CUSTCITY': 25,
+    'CUSTPINCODE': 10,
+    'CUSTMOBILENUMBER': 10,
+    'CUSTSTDCODE': 10,
+    'CUSTPHONENO': 15,
+    'EGR': 1,
+    'BENEFICIALOWNACNTNO1': 10,
+    'BENEFICIALOWNACNTNO2': 10,
+    'BENEFICIALOWNACNTNO3': 10,
+    'OPTED_FOR_UPI': 1,
+    'BANKBRANCHIFSCCODE1': 11,
+    'PRIMARYORSECONDARYBANK1': 1,
+    'BANKBRANCHIFSCCODE2': 11,
+    'PRIMARYORSECONDARYBANK2': 1,
+    'BANKBRANCHIFSCCODE3': 11,
+    'PRIMARYORSECONDARYBANK3': 1,
+    'BANKBRANCHIFSCCODE4': 11,
+    'ACCOUNTNO4': 20,
+    'PRIMARYORSECONDARYBANK4': 1,
+    'BANKBRANCHIFSCCODE5': 11,
+    'ACCOUNTNO5': 20,
+    'PRIMARYORSECONDARYBANK5': 1,
+    'PRIMARYORSECONDARYDP1': 1,
+    'PRIMARYORSECONDARYDP2': 1,
+    'PRIMARYORSECONDARYDP3': 1,
+    'DEPOSITORYNAME4': 4,
+    'DEMANTID4': 20,
+    'BENEFICIALOWNACNTNO4': 15,
+    'PRIMARYORSECONDARYDP4': 1,
+    'DEPOSITORYNAME5': 4,
+    'BENEFICIALOWNACNTNO5': 15,
+    'PRIMARYORSECONDARYDP5': 1,
+    'DIRECTORDETAILS': 2,
 }
 
 BSE_MANDATORY_COLUMNS = {
@@ -624,13 +602,51 @@ BSE_MANDATORY_COLUMNS = {
 }
 
 # Field shorthands
+BSE_TEXT_COLUMNS = frozenset({
+    'ADDRESS1',
+    'ADDRESS2',
+    'UPDATEREASON',
+    'EMAIL',
+    'DEPOSITORYPARTICIPANT1',
+    'DEPOSITORYPARTICIPANT2',
+    'DEPOSITORYPARTICIPANT3',
+    'BANKNAME1',
+    'BANKNAME2',
+    'BANKNAME3',
+    'CLIENTNAME',
+    'REGISTRATIONNO',
+    'REGISTERINGAUTHORITY',
+    'PLACEOFREGISTRATION',
+    'CONTACTPERSONNAME1',
+    'CONTACTPERSONDESIGNATION1',
+    'CONTACTPERSONADDRESS1',
+    'CONTACTPERSONEMAIL1',
+    'CONTACTPERSONNAME2',
+    'CONTACTPERSONDESIGNATION2',
+    'CONTACTPERSONADDRESS2',
+    'CONTACTPERSONEMAIL2',
+    'CUSTNAME',
+    'CUSTADDRESS',
+    'CUSTEMAIL',
+    'BANKNAME4',
+    'BANKNAME5',
+    'DEMANTID5',
+    'CLIENTNAMEDESCRIPTION',
+})
+
 def _bsestr(col, **kw):
-    kw.setdefault('max_length', BSE_COLUMN_MAX_LENGTHS[col])
+    max_length = BSE_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in BSE_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.TextField(null=not required, blank=not required, db_column=db_column, **kw)
+    field_class = models.TextField if col in BSE_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        # MySQL does not allow a default value on TEXT/BLOB columns.
+        kw.pop('default', None)
+    return field_class(null=not required, blank=not required, db_column=db_column, **kw)
 
 def _bsepk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
@@ -969,186 +985,100 @@ class BseStarMfTaxStatusMaster(models.Model):
     def __str__(self):
         return f"{self.tax_status} - {self.tax_code}"
 
-
+# NSE UCC limits.  These values are used for Django validation; _nsestr keeps
+# the physical columns as TEXT so the wide provider table remains safe on
+# MySQL/InnoDB.
 NSE_COLUMN_MAX_LENGTHS = {
-    'ccdMemCd': 50,
-    'ccdCd': 50,
-    'ccdName': 50,
-    'ccdCategory': 50,
-    'ccdPinCode': 50,
-    'ccdTelNo': 50,
-    'ccdTvFlag': 50,
-    'ccdAgrDt': 50,
-    'ccdPanNo': 50,
-    'ccdRegNo': 50,
-    'ccdRegAuth': 50,
-    'ccdPlcReg': 50,
-    'ccdDtReg': 50,
-    'ccdSegInd': 50,
-    'ccdDob': 50,
-    'ccdBankBrAdd': 50,
-    'ccdDeposId': 50,
-    'ccdAddLine1': 50,
-    'ccdAddLine2': 50,
-    'ccdAddLine3': 50,
-    'ccdAddCity': 50,
-    'ccdAddState': 50,
-    'ccdAddCountry': 50,
-    'ccdTelIsd': 50,
-    'ccdTelStd': 50,
-    'ccdMobile': 50,
-    'ccdEmail': 50,
-    'ccdProofType': 50,
-    'ccdProofNo': 50,
-    'ccdIssPlcProof': 50,
-    'ccdIssDtProof': 50,
-    'ccdDir1Name': 50,
-    'ccdDir2Name': 50,
-    'ccdDir3Name': 50,
-    'ccdDir1Desig': 50,
-    'ccdDir2Desig': 50,
-    'ccdDir3Desig': 50,
-    'ccdDir1Pan': 50,
-    'ccdDir2Pan': 50,
-    'ccdDir3Pan': 50,
-    'ccdDir1Add': 50,
-    'ccdDir2Add': 50,
-    'ccdDir3Add': 50,
-    'ccdDir1TelNo': 50,
-    'ccdDir2TelNo': 50,
-    'ccdDir3TelNo': 50,
-    'ccdDir1Email': 50,
-    'ccdDir2Email': 50,
-    'ccdDir3Email': 50,
-    'ccdIpv': 50,
-    'ccdUccCd': 50,
-    'ccdRelationship': 50,
-    'ccdFacilityType': 50,
-    'ccdCin': 50,
-    'ccdCltStatus': 50,
-    'ccdCltStatusReason': 50,
-    'ccdGender': 50,
-    'ccdGuardianName': 50,
-    'ccdMaritlStatus': 50,
-    'ccdNationality': 50,
-    'ccdPermantAddFlg': 50,
-    'ccdPermAddLine1': 50,
-    'ccdPermAddLine2': 50,
-    'ccdPermAddLine3': 50,
-    'ccdPermAddCity': 50,
-    'ccdPermAddState': 50,
-    'ccdPermAddCountry': 50,
-    'ccdPermPin': 50,
-    'ccdOffcIsd': 50,
-    'ccdOffcStd': 50,
-    'ccdTelOffice': 50,
-    'ccdUid': 50,
-    'ccdDeposName': 50,
-    'ccdBankName': 50,
-    'ccdBankAcctNo': 50,
-    'ccdBenAcctNo': 50,
-    'ccdBankName2': 50,
-    'ccdBankAcctNo2': 50,
-    'ccdBankName3': 50,
-    'ccdBankAcctNo3': 50,
-    'ccdDeposName2': 50,
-    'ccdDeposId2': 50,
-    'ccdBenAcctNo2': 50,
-    'ccdDeposName3': 50,
-    'ccdDeposId3': 50,
-    'ccdBenAcctNo3': 50,
-    'ccdGrosAnnlRnge': 50,
-    'ccdGrosAnnlAsdate': 50,
-    'ccdNetWorth': 50,
-    'ccdNetWorthAsdate': 50,
-    'ccdPep': 50,
-    'ccdPoi': 50,
-    'ccdOccupation': 50,
-    'ccdOccupationDtls': 50,
-    'ccdBusComDt': 50,
-    'ccdCpCd': 50,
-    'ccdClntTyp': 50,
-    'ccdDinCntrctPerson1': 50,
-    'ccdUidCntrctPerson1': 50,
-    'ccdDinCntrctPerson2': 50,
-    'ccdUidCntrctPerson2': 50,
-    'ccdDinCntrctPerson3': 50,
-    'ccdUidCntrctPerson3': 50,
-    'ccdDir4Name': 50,
-    'ccdDir4Desig': 50,
-    'ccdDir4Pan': 50,
-    'ccdDir4Add': 50,
-    'ccdDir4TelNo': 50,
-    'ccdDinCntrctPerson4': 50,
-    'ccdUidCntrctPerson4': 50,
-    'ccdDir4Email': 50,
-    'ccdDir5Name': 50,
-    'ccdDir5Desig': 50,
-    'ccdDir5Pan': 50,
-    'ccdDir5Add': 50,
-    'ccdDir5TelNo': 50,
-    'ccdDinCntrctPerson5': 50,
-    'ccdUidCntrctPerson5': 50,
-    'ccdDir5Email': 50,
-    'ccdNationalityOth': 50,
-    'ccdPermAddStateOth': 50,
-    'ccdAddStateOth': 50,
-    'ccdPoaFunds': 50,
-    'ccdPoaSecurities': 50,
-    'ccdNomFlag': 50,
-    'ccdCpName': 50,
-    'ccdCpPan': 50,
-    'ccdCpEmail': 50,
-    'ccdCpStd': 50,
-    'ccdCpIsd': 50,
-    'ccdCpTel': 50,
-    'ccdCpMob': 50,
-    'ccdCpAdd': 50,
-    'ccdCpAddCity': 50,
-    'ccdCpAddState': 50,
-    'ccdCpAddStateOth': 50,
-    'ccdCpAddCountry': 50,
-    'ccdCpAddPin': 50,
-    'ccdBankIfsc': 50,
-    'ccdBankIfsc2': 50,
-    'ccdBankIfsc3': 50,
-    'ccdBankIfsc4': 50,
-    'ccdBankIfsc5': 50,
-    'ccdPriSecBnk': 50,
-    'ccdPriSecBnk2': 50,
-    'ccdPriSecBnk3': 50,
-    'ccdPriSecBnk4': 50,
-    'ccdPriSecBnk5': 50,
-    'ccdPriSecDp': 50,
-    'ccdPriSecDp2': 50,
-    'ccdPriSecDp3': 50,
-    'ccdPriSecDp4': 50,
-    'ccdPriSecDp5': 50,
-    'ccdAcctType': 50,
-    'ccdOptForUpi': 50,
-    'ccdBankName4': 50,
-    'ccdBankAcctNo4': 50,
-    'ccdBankName5': 50,
-    'ccdBankAcctNo5': 50,
-    'ccdDeposName4': 50,
-    'ccdDeposId4': 50,
-    'ccdBenAcctNo4': 50,
-    'ccdDeposName5': 50,
-    'ccdDeposId5': 50,
-    'ccdBenAcctNo5': 50,
-    'ccdBankBrAdd': 50,
-    'ccdAddLine1': 50,
-    'ccdAddLine2': 50,
-    'ccdAddLine3': 50,
-    'ccdDir1Add': 50,
-    'ccdDir2Add': 50,
-    'ccdDir3Add': 50,
-    'ccdPermAddLine1': 50,
-    'ccdPermAddLine2': 50,
-    'ccdPermAddLine3': 50,
-    'ccdDir4Add': 50,
-    'ccdDir5Add': 50,
+    'ccdMemCd': 5,
+    'ccdCd': 10,
+    'ccdCategory': 5,
+    'ccdPinCode': 10,
+    'ccdTelNo': 15,
+    'ccdTvFlag': 1,
+    'ccdAgrDt': 10,
+    'ccdPanNo': 10,
+    'ccdDtReg': 10,
+    'ccdSegInd': 1,
+    'ccdDob': 10,
+    'ccdDeposId': 16,
+    'ccdAddCity': 35,
+    'ccdAddCountry': 35,
+    'ccdTelIsd': 5,
+    'ccdTelStd': 10,
+    'ccdMobile': 13,
+    'ccdProofType': 10,
+    'ccdIssDtProof': 10,
+    'ccdIpv': 1,
+    'ccdUccCd': 10,
+    'ccdRelationship': 20,
+    'ccdFacilityType': 10,
+    'ccdCin': 21,
+    'ccdCltStatus': 20,
+    'ccdCltStatusReason': 20,
+    'ccdGender': 1,
+    'ccdMaritlStatus': 2,
+    'ccdNationality': 3,
+    'ccdPermantAddFlg': 1,
+    'ccdPermAddCity': 35,
+    'ccdPermAddCountry': 35,
+    'ccdPermPin': 10,
+    'ccdOffcIsd': 5,
+    'ccdOffcStd': 10,
+    'ccdTelOffice': 15,
+    'ccdUid': 12,
+    'ccdDeposName': 4,
+    'ccdBankAcctNo': 20,
+    'ccdBenAcctNo': 20,
+    'ccdGrosAnnlRnge': 2,
+    'ccdGrosAnnlAsdate': 10,
+    'ccdNetWorth': 14,
+    'ccdNetWorthAsdate': 10,
+    'ccdPep': 1,
+    'ccdPoi': 10,
+    'ccdOccupation': 3,
+    'ccdOccupationDtls': 15,
+    'ccdBusComDt': 10,
+    'ccdCpCd': 14,
+    'ccdClntTyp': 3,
+    'ccdPoaFunds': 1,
+    'ccdPoaSecurities': 1,
+    'ccdNomFlag': 1,
+    'ccdCpPan': 10,
+    'ccdCpStd': 10,
+    'ccdCpIsd': 5,
+    'ccdCpTel': 15,
+    'ccdCpMob': 13,
+    'ccdCpAddCity': 35,
+    'ccdCpAddCountry': 35,
+    'ccdCpAddPin': 10,
+    'ccdBankIfsc': 11,
+    'ccdPriSecBnk': 1,
+    'ccdPriSecDp': 1,
+    'ccdAcctType': 2,
+    'ccdOptForUpi': 1,
 }
+
+for _number in range(1, 6):
+    NSE_COLUMN_MAX_LENGTHS.update({
+        f'ccdDir{_number}Desig': 30,
+        f'ccdDir{_number}Pan': 10,
+        f'ccdDir{_number}TelNo': 15,
+        f'ccdDinCntrctPerson{_number}': 10,
+        f'ccdUidCntrctPerson{_number}': 12,
+    })
+for _number in range(2, 6):
+    NSE_COLUMN_MAX_LENGTHS.update({
+        f'ccdBankAcctNo{_number}': 20,
+        f'ccdBankIfsc{_number}': 11,
+        f'ccdPriSecBnk{_number}': 1,
+    })
+for _number in range(2, 6):
+    NSE_COLUMN_MAX_LENGTHS.update({
+        f'ccdDeposName{_number}': 4,
+        f'ccdDeposId{_number}': 16,
+        f'ccdBenAcctNo{_number}': 20,
+        f'ccdPriSecDp{_number}': 1,
+    })
 
 NSE_MANDATORY_COLUMNS = {
     'ccdAcctType',
@@ -1222,172 +1152,69 @@ NSE_MANDATORY_COLUMNS = {
     'ccdSegInd',
 }
 
-# MSE uses the same editable-master pattern as NSE and BSE.  The API accepts
-# one JSON object containing these 283 fields; values that are specific to a
-# client are replaced from UserDetails when the request is built, while the
-# table keeps the provider's fixed/default columns visible in Master.
-MSE_BASE_COLUMNS = (
-    'ccdECM', 'ccdEDS', 'ccdCDS', 'ccdClientCode', 'ccdClientName',
-    'ccdAccountType', 'ccdCategory', 'ccdPANNo', 'ccdGender',
-    'ccdGuardianName', 'ccdNationality', 'ccdEmailID',
-    'ccdRelationshipWithClientForEmail', 'ccdCorrespondenceClientAddress',
-    'ccdCorrespondenceClientCity', 'ccdCorrespondenceClientState',
-    'ccdCorrespondenceClientOtherState', 'ccdCorrespondenceClientCountry',
-    'ccdCorrespondenceClientPinCode', 'ccdPermanentAddSameAsCorrs',
-    'ccdPermanentAddress', 'ccdPermanentCity', 'ccdPermanentState',
-    'ccdPermanentOtherState', 'ccdPermanentCountryCode',
-    'ccdPermanentPincode', 'ccdMobileNo',
-    'ccdRelationshipWithClientForMobile', 'ccdOfficeTelephoneNo',
-    'ccdISDCode', 'ccdSTDCode', 'ccdDateofBirth', 'ccdUID', 'ccdBankName1',
-    'ccdIFSCCode1', 'ccdBankAccountNo1', 'ccdBankAccountType1',
-    'ccdPrimarySecondaryBank1', 'ccdCINOfClient',
-    'ccdGrossAnnualIncomeRange', 'ccdGrossAnnualIncomeDate', 'ccdNetworth',
-    'ccdNetworthAsOnDate', 'ccdPEPersopn', 'ccdOccupation',
-    'ccdOccupationDetails', 'ccdCPCodeECM', 'ccdCPCodeEDS', 'ccdCPCodeCDS',
-    'ccdRegistrationNo', 'ccdRegisteringAuthority', 'ccdRegistrationPlace',
-    'ccdRegistrationDate', 'ccdInpersonVerification', 'ccdAgreementDate',
-    'ccdTypeOfFacility', 'ccdUpdationFlagSMSEmail', 'ccdRelationshipCode',
-    'ccdProofType', 'ccdProofNo', 'ccdPlaceOfProof', 'ccdIssueProofDate',
-    'ccdStatus', 'ccdClientTypeCorporate', 'ccdPOAFunds', 'ccdPOASecurities',
-    'ccdPOAFundsDate', 'ccdPOASecuritiesDate', 'ccdDDPISettlement',
-    'ccdDDPISettlementDate', 'ccdDDPIPledging', 'ccdDDPIPledgingDate',
-    'ccdNominationOption', 'ccdUPIOpt', 'ccdClientNameDescription', 'ccdFlag',
-)
-MSE_BANK_COLUMNS = tuple(
-    f'{prefix}{number}'
-    for number in range(2, 11)
-    for prefix in (
-        'ccdBankName', 'ccdIFSCCode', 'ccdBankAccountNo',
-        'ccdBankAccountType', 'ccdPrimarySecondaryBank',
-    )
-)
-MSE_DEPOSITORY_COLUMNS = tuple(
-    f'{prefix}{number}'
-    for number in range(1, 6)
-    for prefix in (
-        'ccdDepositoryName', 'ccdDepositoryId', 'ccdBeneficiaryAccountNo',
-        'ccdPrimarySecondaryDP',
-    )
-)
-MSE_PROVIDER_CONTACT_COLUMNS = tuple(
-    f'ccd{provider}{suffix}'
-    for provider in ('ECM', 'EDS', 'CDS')
-    for suffix in (
-        'CPName', 'CPPANNo', 'CPEmailId', 'CorrespondenceCPAddress',
-        'CorrespondenceCPCity', 'CorrespondenceCPState',
-        'CorrespondenceCPOtherState', 'CorrespondenceCPCountry',
-        'CorrespondenceCPPinCode', 'CPMobileNo', 'CPISDCode', 'CPSTDCode',
-        'CPTelephoneNo',
-    )
-)
-MSE_CONTACT_COLUMNS = tuple(
-    f'ccdCP{suffix}{number}'
-    for number in range(1, 7)
-    for suffix in (
-        'Name', 'Designation', 'PANNo', 'Address', 'ContactDetails', 'DIN',
-        'EmailID',
-    )
-)
-MSE_COLUMNS = (
-    *(f'ccdReserved{number}' for number in range(1, 62)),
-    *MSE_BASE_COLUMNS,
-    *MSE_BANK_COLUMNS,
-    *MSE_DEPOSITORY_COLUMNS,
-    *MSE_PROVIDER_CONTACT_COLUMNS,
-    *MSE_CONTACT_COLUMNS,
-)
-# Temporary string size for the wide MSE table.  The table has 283 columns;
-# keeping the initial width small avoids MySQL's InnoDB row-size limit.  Set
-# larger lengths only on the fields that need them after the table exists.
-MSE_COLUMN_MAX_LENGTHS = {column: 20 for column in MSE_COLUMNS}
-
-
-class MseAsciiCharField(models.CharField):
-    """Compact ASCII VARCHAR used by the wide MSE provider table."""
-
-    def db_type(self, connection):
-        if connection.vendor == 'mysql':
-            return f'varchar({self.max_length}) CHARACTER SET ascii'
-        return super().db_type(connection)
-
-
-def _msepk(col):
-    return models.BigAutoField(primary_key=True, db_column=col)
-
-
-def _msestr(col, **kw):
-    kw.setdefault('max_length', MSE_COLUMN_MAX_LENGTHS[col])
-    db_column = kw.pop('db_column', col)
-    return MseAsciiCharField(null=True, blank=True, db_column=db_column, **kw)
-
-
-class Mse(models.Model):
-    """Editable defaults/schema for the MSE JSON UCC payload."""
-
-    id = _msepk('id')
-    locals().update({column: _msestr(column) for column in MSE_COLUMNS})
-
-    class Meta:
-        db_table = 'mse'
-
-    def __str__(self):
-        return f'MSE defaults {self.id}'
-
-
-class MseStateCodeMaster(models.Model):
-    state_name = models.CharField(max_length=100, unique=True)
-    state_code = models.CharField(max_length=6)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'mse_state_code_master'
-        ordering = ('state_name',)
-
-
-class MseOccupationMaster(models.Model):
-    occupation_name = models.CharField(max_length=50, unique=True)
-    occupation_code = models.CharField(max_length=10)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'mse_occupation_master'
-        ordering = ('occupation_name',)
-
-
-class MseIncomeRangeMaster(models.Model):
-    income_range = models.CharField(max_length=50, unique=True)
-    income_code = models.CharField(max_length=10)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'mse_income_range_master'
-        ordering = ('income_range',)
-
-
-class MseAccountTypeMaster(models.Model):
-    account_type = models.CharField(max_length=50, unique=True)
-    account_code = models.CharField(max_length=10)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'mse_account_type_master'
-        ordering = ('account_type',)
-
-def _nsepk(col):
-    return models.BigAutoField(primary_key=True, db_column=col)
+NSE_TEXT_COLUMNS = frozenset({
+    'ccdName',
+    'ccdRegNo',
+    'ccdRegAuth',
+    'ccdPlcReg',
+    'ccdBankBrAdd',
+    'ccdAddLine1',
+    'ccdAddLine2',
+    'ccdAddLine3',
+    'ccdAddState',
+    'ccdEmail',
+    'ccdProofNo',
+    'ccdIssPlcProof',
+    'ccdGuardianName',
+    'ccdPermAddLine1',
+    'ccdPermAddLine2',
+    'ccdPermAddLine3',
+    'ccdPermAddState',
+    'ccdBankName',
+    'ccdNationalityOth',
+    'ccdPermAddStateOth',
+    'ccdAddStateOth',
+    'ccdCpName',
+    'ccdCpEmail',
+    'ccdCpAdd',
+    'ccdCpAddState',
+    'ccdCpAddStateOth',
+    'ccdDir1Name',
+    'ccdDir2Name',
+    'ccdDir3Name',
+    'ccdDir4Name',
+    'ccdDir5Name',
+    'ccdDir1Add',
+    'ccdDir2Add',
+    'ccdDir3Add',
+    'ccdDir4Add',
+    'ccdDir5Add',
+    'ccdDir1Email',
+    'ccdDir2Email',
+    'ccdDir3Email',
+    'ccdDir4Email',
+    'ccdDir5Email',
+    'ccdBankName2',
+    'ccdBankName3',
+    'ccdBankName4',
+    'ccdBankName5',
+})
 
 def _nsestr(col, **kw):
-    kw.setdefault('max_length', NSE_COLUMN_MAX_LENGTHS[col])
+    max_length = NSE_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in NSE_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.TextField(null=not required, blank=not required, db_column=db_column, **kw)
+    field_class = models.TextField if col in NSE_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        kw.pop('default', None)
+    return field_class(null=not required, blank=not required, db_column=db_column, **kw)
 
+def _nsepk(col):
+    return models.BigAutoField(primary_key=True, db_column=col)
 
 class Nse(models.Model):
     id                        = _nsepk('id')
@@ -1563,6 +1390,339 @@ class Nse(models.Model):
     def __str__(self):
         return f"{self.ccdCd or self.id}"
 
+# MSE uses the same editable-master pattern as NSE and BSE.  The API accepts
+# one JSON object containing these 283 fields; values that are specific to a
+# client are replaced from UserDetails when the request is built, while the
+# table keeps the provider's fixed/default columns visible in Master.
+MSE_BASE_COLUMNS = (
+    'ccdECM', 'ccdEDS', 'ccdCDS', 'ccdClientCode', 'ccdClientName',
+    'ccdAccountType', 'ccdCategory', 'ccdPANNo', 'ccdGender',
+    'ccdGuardianName', 'ccdNationality', 'ccdEmailID',
+    'ccdRelationshipWithClientForEmail', 'ccdCorrespondenceClientAddress',
+    'ccdCorrespondenceClientCity', 'ccdCorrespondenceClientState',
+    'ccdCorrespondenceClientOtherState', 'ccdCorrespondenceClientCountry',
+    'ccdCorrespondenceClientPinCode', 'ccdPermanentAddSameAsCorrs',
+    'ccdPermanentAddress', 'ccdPermanentCity', 'ccdPermanentState',
+    'ccdPermanentOtherState', 'ccdPermanentCountryCode',
+    'ccdPermanentPincode', 'ccdMobileNo',
+    'ccdRelationshipWithClientForMobile', 'ccdOfficeTelephoneNo',
+    'ccdISDCode', 'ccdSTDCode', 'ccdDateofBirth', 'ccdUID', 'ccdBankName1',
+    'ccdIFSCCode1', 'ccdBankAccountNo1', 'ccdBankAccountType1',
+    'ccdPrimarySecondaryBank1', 'ccdCINOfClient',
+    'ccdGrossAnnualIncomeRange', 'ccdGrossAnnualIncomeDate', 'ccdNetworth',
+    'ccdNetworthAsOnDate', 'ccdPEPersopn', 'ccdOccupation',
+    'ccdOccupationDetails', 'ccdCPCodeECM', 'ccdCPCodeEDS', 'ccdCPCodeCDS',
+    'ccdRegistrationNo', 'ccdRegisteringAuthority', 'ccdRegistrationPlace',
+    'ccdRegistrationDate', 'ccdInpersonVerification', 'ccdAgreementDate',
+    'ccdTypeOfFacility', 'ccdUpdationFlagSMSEmail', 'ccdRelationshipCode',
+    'ccdProofType', 'ccdProofNo', 'ccdPlaceOfProof', 'ccdIssueProofDate',
+    'ccdStatus', 'ccdClientTypeCorporate', 'ccdPOAFunds', 'ccdPOASecurities',
+    'ccdPOAFundsDate', 'ccdPOASecuritiesDate', 'ccdDDPISettlement',
+    'ccdDDPISettlementDate', 'ccdDDPIPledging', 'ccdDDPIPledgingDate',
+    'ccdNominationOption', 'ccdUPIOpt', 'ccdClientNameDescription', 'ccdFlag',
+)
+MSE_BANK_COLUMNS = tuple(
+    f'{prefix}{number}'
+    for number in range(2, 11)
+    for prefix in (
+        'ccdBankName', 'ccdIFSCCode', 'ccdBankAccountNo',
+        'ccdBankAccountType', 'ccdPrimarySecondaryBank',
+    )
+)
+MSE_DEPOSITORY_COLUMNS = tuple(
+    f'{prefix}{number}'
+    for number in range(1, 6)
+    for prefix in (
+        'ccdDepositoryName', 'ccdDepositoryId', 'ccdBeneficiaryAccountNo',
+        'ccdPrimarySecondaryDP',
+    )
+)
+MSE_PROVIDER_CONTACT_COLUMNS = tuple(
+    f'ccd{provider}{suffix}'
+    for provider in ('ECM', 'EDS', 'CDS')
+    for suffix in (
+        'CPName', 'CPPANNo', 'CPEmailId', 'CorrespondenceCPAddress',
+        'CorrespondenceCPCity', 'CorrespondenceCPState',
+        'CorrespondenceCPOtherState', 'CorrespondenceCPCountry',
+        'CorrespondenceCPPinCode', 'CPMobileNo', 'CPISDCode', 'CPSTDCode',
+        'CPTelephoneNo',
+    )
+)
+MSE_CONTACT_COLUMNS = tuple(
+    f'ccdCP{suffix}{number}'
+    for number in range(1, 7)
+    for suffix in (
+        'Name', 'Designation', 'PANNo', 'Address', 'ContactDetails', 'DIN',
+        'EmailID',
+    )
+)
+MSE_COLUMNS = (
+    *(f'ccdReserved{number}' for number in range(1, 62)),
+    *MSE_BASE_COLUMNS,
+    *MSE_BANK_COLUMNS,
+    *MSE_DEPOSITORY_COLUMNS,
+    *MSE_PROVIDER_CONTACT_COLUMNS,
+    *MSE_CONTACT_COLUMNS,
+)
+
+MSE_TEXT_COLUMNS = frozenset({
+    'ccdClientName',
+    'ccdGuardianName',
+    'ccdEmailID',
+    'ccdCorrespondenceClientAddress',
+    'ccdCorrespondenceClientCity',
+    'ccdCorrespondenceClientOtherState',
+    'ccdPermanentAddress',
+    'ccdPermanentCity',
+    'ccdPermanentOtherState',
+    'ccdBankName1',
+    'ccdOccupationDetails',
+    'ccdRegistrationNo',
+    'ccdRegisteringAuthority',
+    'ccdRegistrationPlace',
+    'ccdProofNo',
+    'ccdPlaceOfProof',
+    'ccdClientNameDescription',
+    *{
+        f'ccdBankName{number}'
+        for number in range(2, 11)
+    },
+    *{
+        f'ccdBankAccountNo{number}'
+        for number in range(2, 11)
+    },
+    'ccdECMCPName',
+    'ccdECMCPEmailId',
+    'ccdECMCorrespondenceCPAddress',
+    'ccdECMCorrespondenceCPCity',
+    'ccdECMCorrespondenceCPOtherState',
+    'ccdEDSCPName',
+    'ccdEDSCPEmailId',
+    'ccdEDSCorrespondenceCPAddress',
+    'ccdEDSCorrespondenceCPCity',
+    'ccdEDSCorrespondenceCPOtherState',
+    'ccdCDSCPName',
+    'ccdCDSCPEmailId',
+    'ccdCDSCorrespondenceCPAddress',
+    'ccdCDSCorrespondenceCPCity',
+    'ccdCDSCorrespondenceCPOtherState',
+    *{
+        f'ccdCP{suffix}{number}'
+        for number in range(1, 7)
+        for suffix in ('Name', 'Designation', 'Address', 'EmailID')
+    },
+})
+
+# MSE provider limits.  Long fields are stored as TEXT below; otherwise the
+# actual VARCHAR widths across this 283-column table would exceed InnoDB's
+# inline row-size limit.
+MSE_COLUMN_MAX_LENGTHS = {
+    column: 20
+    for column in MSE_COLUMNS
+    if column not in MSE_TEXT_COLUMNS
+}
+
+
+def _mse_update_max_lengths(values):
+    MSE_COLUMN_MAX_LENGTHS.update({
+        column: max_length
+        for column, max_length in values.items()
+        if column not in MSE_TEXT_COLUMNS
+    })
+
+
+_mse_update_max_lengths({
+    'ccdClientCode': 20,
+    'ccdClientName': 50,
+    'ccdAccountType': 10,
+    'ccdCategory': 2,
+    'ccdPANNo': 10,
+    'ccdGender': 1,
+    'ccdGuardianName': 100,
+    'ccdNationality': 3,
+    'ccdEmailID': 50,
+    'ccdRelationshipWithClientForEmail': 2,
+    'ccdCorrespondenceClientAddress': 150,
+    'ccdCorrespondenceClientCity': 35,
+    'ccdCorrespondenceClientState': 3,
+    'ccdCorrespondenceClientOtherState': 50,
+    'ccdCorrespondenceClientCountry': 3,
+    'ccdCorrespondenceClientPinCode': 10,
+    'ccdPermanentAddSameAsCorrs': 1,
+    'ccdPermanentAddress': 150,
+    'ccdPermanentCity': 35,
+    'ccdPermanentState': 3,
+    'ccdPermanentOtherState': 50,
+    'ccdPermanentCountryCode': 3,
+    'ccdPermanentPincode': 10,
+    'ccdMobileNo': 10,
+    'ccdRelationshipWithClientForMobile': 2,
+    'ccdOfficeTelephoneNo': 15,
+    'ccdISDCode': 5,
+    'ccdSTDCode': 10,
+    'ccdDateofBirth': 8,
+    'ccdUID': 12,
+    'ccdBankName1': 100,
+    'ccdIFSCCode1': 11,
+    'ccdBankAccountNo1': 30,
+    'ccdBankAccountType1': 2,
+    'ccdPrimarySecondaryBank1': 1,
+    'ccdCINOfClient': 21,
+    'ccdGrossAnnualIncomeRange': 2,
+    'ccdGrossAnnualIncomeDate': 8,
+    'ccdNetworth': 14,
+    'ccdNetworthAsOnDate': 8,
+    'ccdPEPersopn': 1,
+    'ccdOccupation': 3,
+    'ccdOccupationDetails': 100,
+    'ccdRegistrationNo': 50,
+    'ccdRegisteringAuthority': 100,
+    'ccdRegistrationPlace': 50,
+    'ccdRegistrationDate': 8,
+    'ccdInpersonVerification': 1,
+    'ccdAgreementDate': 8,
+    'ccdTypeOfFacility': 2,
+    'ccdUpdationFlagSMSEmail': 1,
+    'ccdRelationshipCode': 3,
+    'ccdProofType': 10,
+    'ccdProofNo': 50,
+    'ccdPlaceOfProof': 50,
+    'ccdIssueProofDate': 8,
+    'ccdStatus': 2,
+    'ccdClientTypeCorporate': 1,
+    'ccdPOAFunds': 1,
+    'ccdPOASecurities': 1,
+    'ccdPOAFundsDate': 8,
+    'ccdPOASecuritiesDate': 8,
+    'ccdDDPISettlement': 1,
+    'ccdDDPISettlementDate': 8,
+    'ccdDDPIPledging': 1,
+    'ccdDDPIPledgingDate': 8,
+    'ccdNominationOption': 1,
+    'ccdUPIOpt': 1,
+    'ccdClientNameDescription': 150,
+    'ccdFlag': 1,
+})
+for _number in range(2, 11):
+    _mse_update_max_lengths({
+        f'ccdBankName{_number}': 100,
+        f'ccdIFSCCode{_number}': 11,
+        f'ccdBankAccountNo{_number}': 30,
+        f'ccdBankAccountType{_number}': 2,
+        f'ccdPrimarySecondaryBank{_number}': 1,
+    })
+for _number in range(1, 6):
+    _mse_update_max_lengths({
+        f'ccdDepositoryName{_number}': 4,
+        f'ccdDepositoryId{_number}': 16,
+        f'ccdBeneficiaryAccountNo{_number}': 20,
+        f'ccdPrimarySecondaryDP{_number}': 1,
+    })
+for _provider in ('ECM', 'EDS', 'CDS'):
+    _mse_update_max_lengths({
+        f'ccd{_provider}CPName': 100,
+        f'ccd{_provider}CPPANNo': 10,
+        f'ccd{_provider}CPEmailId': 50,
+        f'ccd{_provider}CorrespondenceCPAddress': 150,
+        f'ccd{_provider}CorrespondenceCPCity': 35,
+        f'ccd{_provider}CorrespondenceCPState': 3,
+        f'ccd{_provider}CorrespondenceCPOtherState': 50,
+        f'ccd{_provider}CorrespondenceCPCountry': 3,
+        f'ccd{_provider}CorrespondenceCPPinCode': 10,
+        f'ccd{_provider}CPMobileNo': 10,
+        f'ccd{_provider}CPISDCode': 5,
+        f'ccd{_provider}CPSTDCode': 10,
+        f'ccd{_provider}CPTelephoneNo': 15,
+    })
+for _number in range(1, 7):
+    _mse_update_max_lengths({
+        f'ccdCPName{_number}': 100,
+        f'ccdCPDesignation{_number}': 100,
+        f'ccdCPPANNo{_number}': 10,
+        f'ccdCPAddress{_number}': 150,
+        f'ccdCPContactDetails{_number}': 15,
+        f'ccdCPDIN{_number}': 10,
+        f'ccdCPEmailID{_number}': 50,
+    })
+
+class MseAsciiCharField(models.CharField):
+    """Compact ASCII VARCHAR used by the wide MSE provider table."""
+
+    def db_type(self, connection):
+        if connection.vendor == 'mysql':
+            return f'varchar({self.max_length}) CHARACTER SET ascii'
+        return super().db_type(connection)
+
+
+def _msepk(col):
+    return models.BigAutoField(primary_key=True, db_column=col)
+
+
+def _msestr(col, **kw):
+    max_length = MSE_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
+    db_column = kw.pop('db_column', col)
+    field_class = models.TextField if col in MSE_TEXT_COLUMNS else MseAsciiCharField
+    return field_class(null=True, blank=True, db_column=db_column, **kw)
+
+
+class Mse(models.Model):
+    """Editable defaults/schema for the MSE JSON UCC payload."""
+
+    id = _msepk('id')
+    locals().update({column: _msestr(column) for column in MSE_COLUMNS})
+
+    class Meta:
+        db_table = 'mse'
+
+    def __str__(self):
+        return f'MSE defaults {self.id}'
+
+
+class MseStateCodeMaster(models.Model):
+    state_name = models.CharField(max_length=100, unique=True)
+    state_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'mse_state_code_master'
+        ordering = ('state_name',)
+
+
+class MseOccupationMaster(models.Model):
+    occupation_name = models.CharField(max_length=50, unique=True)
+    occupation_code = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'mse_occupation_master'
+        ordering = ('occupation_name',)
+
+
+class MseIncomeRangeMaster(models.Model):
+    income_range = models.CharField(max_length=50, unique=True)
+    income_code = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'mse_income_range_master'
+        ordering = ('income_range',)
+
+
+class MseAccountTypeMaster(models.Model):
+    account_type = models.CharField(max_length=50, unique=True)
+    account_code = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'mse_account_type_master'
+        ordering = ('account_type',)
+
 
 def _credentialbsestr(col, **kw):
     kw.setdefault('max_length', 50)
@@ -1619,7 +1779,6 @@ CKYC_COLUMN_MAX_LENGTHS = {
     'detail_version': 2,
     'detail_flag': 1,
     'application_type': 2,
-    'kyc_branch': 50,
     'name_update_flag': 2,
     'personal_detail_flag': 2,
     'address_update_flag': 2,
@@ -1632,7 +1791,6 @@ CKYC_COLUMN_MAX_LENGTHS = {
     'father_title': 10,
     'mother_title': 10,
     'gender': 1,
-    'occupation': 50,
     'nationality': 2,
     'pan_status': 2,
     'pan_exempt_flag': 2,
@@ -1644,12 +1802,6 @@ CKYC_COLUMN_MAX_LENGTHS = {
     'mobile_isd': 5,
     'application_date': 10,
     'kyc_mode': 2,
-    'verification_name': 100,
-    'verification_designation': 100,
-    'verification_branch': 100,
-    'verification_employee_code': 50,
-    'organisation_name': 150,
-    'organisation_code': 50,
     'entity_type': 2,
     'footer_record_count': 10,
     'footer_fatca_record_count': 10,
@@ -1667,14 +1819,28 @@ CKYC_MANDATORY_COLUMNS = frozenset({
 def _ckycpk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
 
-
+CKYC_TEXT_COLUMNS = frozenset({
+    'kyc_branch',
+    'occupation',
+    'verification_name',
+    'verification_designation',
+    'verification_branch',
+    'verification_employee_code',
+    'organisation_name',
+    'organisation_code',
+})
 def _ckycstr(col, **kw):
-    kw.setdefault('max_length', CKYC_COLUMN_MAX_LENGTHS[col])
+    max_length = CKYC_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in CKYC_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.CharField(
+    field_class = models.TextField if col in CKYC_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        kw.pop('default', None)
+    return field_class(
         null=not required,
         blank=not required,
         db_column=db_column,
@@ -1714,10 +1880,8 @@ class CkycStateCodeMaster(models.Model):
 
 KRA_COLUMN_MAX_LENGTHS = {
     'APP_UPDTFLG': 3,
-    'APP_POS_CODE': 50,
     'APP_KRA_CODE': 10,
     'APP_TYPE': 2,
-    'APP_NO': 50,
     'APP_DATE': 20,
     'APP_PAN_NO': 10,
     'APP_PAN_COPY': 1,
@@ -1727,24 +1891,14 @@ KRA_COLUMN_MAX_LENGTHS = {
     'APP_IPV_FLAG': 2,
     'APP_IPV_DATE': 20,
     'APP_GEN': 1,
-    'APP_NAME': 150,
-    'APP_F_NAME': 100,
-    'APP_REGNO': 50,
     'APP_DOB_INCORP': 20,
     'APP_COMMENCE_DT': 20,
     'APP_NATIONALITY': 10,
-    'APP_OTH_NATIONALITY': 50,
     'APP_COMP_STATUS': 20,
-    'APP_OTH_COMP_STATUS': 50,
     'APP_RES_STATUS': 5,
     'APP_RES_STATUS_PROOF': 20,
     'APP_UID_NO': 20,
-    'APP_COR_ADD1': 55,
-    'APP_COR_ADD2': 55,
-    'APP_COR_ADD3': 55,
-    'APP_COR_CITY': 50,
     'APP_COR_PINCD': 10,
-    'APP_COR_STATE': 50,
     'APP_COR_CTRY': 10,
     'APP_OFF_ISD': 5,
     'APP_OFF_STD': 5,
@@ -1757,62 +1911,34 @@ KRA_COLUMN_MAX_LENGTHS = {
     'APP_FAX_ISD': 5,
     'APP_FAX_STD': 5,
     'APP_FAX_NO': 24,
-    'APP_EMAIL': 100,
     'APP_COR_ADD_PROOF': 20,
-    'APP_COR_ADD_REF': 50,
     'APP_COR_ADD_DT': 20,
     'APP_PER_ADD_FLAG': 1,
-    'APP_PER_ADD1': 55,
-    'APP_PER_ADD2': 55,
-    'APP_PER_ADD3': 55,
-    'APP_PER_CITY': 50,
     'APP_PER_PINCD': 10,
-    'APP_PER_STATE': 50,
     'APP_PER_CTRY': 10,
     'APP_PER_ADD_PROOF': 20,
-    'APP_PER_ADD_REF': 50,
     'APP_PER_ADD_DT': 20,
-    'APP_INCOME': 50,
-    'APP_OCC': 50,
-    'APP_OTH_OCC': 50,
     'APP_POL_CONN': 5,
     'APP_DOC_PROOF': 20,
-    'APP_INTERNAL_REF': 50,
-    'APP_BRANCH_CODE': 50,
     'APP_MAR_STATUS': 10,
     'APP_NETWRTH': 30,
     'APP_NETWORTH_DT': 20,
-    'APP_INCORP_PLC': 50,
-    'APP_OTHERINFO': 100,
     'APP_FILLER1': 10,
     'APP_FILLER2': 10,
     'APP_FILLER3': 10,
-    'APP_IPV_NAME': 50,
-    'APP_IPV_DESG': 50,
-    'APP_IPV_ORGAN': 50,
     'APP_KYC_MODE': 5,
     'APP_VER_NO': 20,
     'APP_VID_NO': 20,
-    'APP_UID_TOKEN': 50 ,
-    'APP_AUTH_NAME': 50,
-    'APP_AUTH_EMAIL': 50,
-    'APP_AUTH_EMAIL1': 50,
-    'APP_AUTH_EMAIL2': 50,
     'APP_AUTH_MOBILE': 24,
     'APP_AUTH_FPICONSENT': 1,
     'APP_AUTH_UBOCONSENT': 1,
     'APP_FATCA_APPLICABLE_FLAG': 1,
-    'APP_FATCA_BIRTH_PLACE': 50,
     'APP_FATCA_BIRTH_COUNTRY': 10,
     'APP_FATCA_COUNTRY_RES': 10,
     'APP_FATCA_COUNTRY_CITYZENSHIP': 10,
     'APP_FATCA_DATE_DECLARATION': 20,
     'APP_MOBILE_FLG': 1,
     'APP_EMAIL_FLG': 1,
-    'APP_OTP_REFNO': 50,
-    'APP_PERM_DISTRICT': 50,
-    'APP_CORR_DISTRICT': 50,
-    'COMPANY_CODE': 50,
     'BATCH_DATE': 20,
     'NO_OF_KYC_RECORDS': 10,
     'APP_FATCADATA_RECORDS': 10,
@@ -1834,14 +1960,59 @@ KRA_MANDATORY_COLUMNS = frozenset({
 def _krapk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
 
-
+KRA_TEXT_COLUMNS = frozenset({
+    'APP_POS_CODE',
+    'APP_NO',
+    'APP_NAME',
+    'APP_F_NAME',
+    'APP_REGNO',
+    'APP_OTH_NATIONALITY',
+    'APP_OTH_COMP_STATUS',
+    'APP_COR_ADD1',
+    'APP_COR_ADD2',
+    'APP_COR_ADD3',
+    'APP_COR_CITY',
+    'APP_COR_STATE',
+    'APP_EMAIL',
+    'APP_COR_ADD_REF',
+    'APP_PER_ADD1',
+    'APP_PER_ADD2',
+    'APP_PER_ADD3',
+    'APP_PER_CITY',
+    'APP_PER_STATE',
+    'APP_PER_ADD_REF',
+    'APP_INCOME',
+    'APP_OCC',
+    'APP_OTH_OCC',
+    'APP_INTERNAL_REF',
+    'APP_BRANCH_CODE',
+    'APP_INCORP_PLC',
+    'APP_OTHERINFO',
+    'APP_IPV_NAME',
+    'APP_IPV_DESG',
+    'APP_IPV_ORGAN',
+    'APP_UID_TOKEN',
+    'APP_AUTH_NAME',
+    'APP_AUTH_EMAIL',
+    'APP_AUTH_EMAIL1',
+    'APP_AUTH_EMAIL2',
+    'APP_FATCA_BIRTH_PLACE',
+    'APP_OTP_REFNO',
+    'APP_PERM_DISTRICT',
+    'APP_CORR_DISTRICT',
+    'COMPANY_CODE',
+})
 def _krastr(col, **kw):
-    kw.setdefault('max_length', KRA_COLUMN_MAX_LENGTHS[col])
+    max_length = KRA_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in KRA_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    field_class = models.TextField
+    field_class = models.TextField if col in KRA_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        kw.pop('default', None)
     return field_class(null=not required, blank=not required, db_column=db_column, **kw)
 
 
@@ -2167,12 +2338,11 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'BnfcrySubTp': 7,
     'Purpse': 7,
     'Titl': 10,
-    'FrstNm': 135,
+    'FrstNm': 20,
     'MddlNm': 20,
     'LastNm': 20,
     'FSfx': 10,
     'BnfcryShrtNm': 16,
-    'ScndHldrNmOfFthr': 50,
     'BirthDt': 30,
     'Gndr': 5,
     'PAN': 10,
@@ -2188,9 +2358,7 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'FmlyFlgForMobNbOf': 3,
     'ScndryISDCd': 6,
     'PhneNb': 24,
-    'EmailAdr': 100,
     'FmlyFlgForEmailAdr': 3,
-    'AltrnEmailAdr': 100,
     'NoNmntnFlg': 3,
     'MdOfOpr': 6,
     'ClrMmbId': 16,
@@ -2206,7 +2374,6 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'DvddCcy': 6,
     'DvddBkCcy': 6,
     'RBIApprvdDt': 30,
-    'RBIRefNb': 50,
     'Mndt': 3,
     'SEBIRegNb': 24,
     'EdctnLvl': 4,
@@ -2224,7 +2391,6 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'BkAcctTp': 3,
     'BnfcryAcctCtgy': 3,
     'BnfcryBkAcctNb': 30,
-    'BnfcryBkNm': 135,
     'BnfcryTaxDdctnSts': 5,
     'ClrSysId': 6,
     'BSDAFlg': 4,
@@ -2238,7 +2404,6 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'RsnCdDeltn': 3,
     'DtOfDeath': 30,
     'AccntOpSrc': 6,
-    'CustdPmsEmailId': 50,
     'POAOrDDPITp': 5,
     'TradgId': 8,
     'SndrRefNb1': 35,
@@ -2261,7 +2426,6 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'GPABPAFlg': 3,
     'POAMstrID': 16,
     'PoaLnkPurpCd': 3,
-    'Rmk': 100,
     'BOUCCLkFlg': 3,
     'CnsntInd': 6,
     'UnqClntId': 11,
@@ -2271,9 +2435,6 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'CmAcctToMap': 16,
     'PurpCd': 5,
     'AdrPrefFlg': 3,
-    'Adr1': 55,
-    'Adr2': 55,
-    'Adr3': 55,
     'Adr4': 36,
     'Ctry': 5,
     'PstCd': 10,
@@ -2309,8 +2470,6 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'CoprcnrsId': 2,
     'ClsrInitBy': 2,
     'RmngBal': 3,
-    'CANm': 135,
-    'CertNbr': 50,
     'CertXpryDt': 30,
     'NbrPOASgntryReqSign': 4,
     'DpstryInd': 4,
@@ -2319,24 +2478,15 @@ CDSL_COLUMN_MAX_LENGTHS = {
     'TrgtDPID': 8,
     'TrgtClntID': 16,
     'SrlFlg': 3,
-    'UPIId': 100,
     'SignTyp': 3,
     'NBOID': 16,
     'ClntBsdaOptOutDt': 30,
-    'CtrySubDvsnNm': 50,
-    'RsnBSDAMod': 50,
     'DtIntmnDms': 30,
     'Drl': 20,
     'Psprt': 20,
     'NmStmtFlg': 3,
-    'RsnDlayClsReq': 100,
     'SpPurpFlg': 3,
     'CnsntMode': 3,
-    'DrpanId': 50,
-    'Rsvd1': 50,
-    'Rsvd2': 50,
-    'Rsvd3': 50,
-    'Rsvd4': 50,
 }
 
 CDSL_MANDATORY_COLUMNS = {
@@ -2422,14 +2572,41 @@ CDSL_MANDATORY_COLUMNS = {
 def _cdslpk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
 
+CDSL_TEXT_COLUMNS = frozenset({
+    'ScndHldrNmOfFthr',
+    'EmailAdr',
+    'AltrnEmailAdr',
+    'RBIRefNb',
+    'BnfcryBkNm',
+    'CustdPmsEmailId',
+    'Rmk',
+    'Adr1',
+    'Adr2',
+    'Adr3',
+    'CANm',
+    'CertNbr',
+    'UPIId',
+    'CtrySubDvsnNm',
+    'RsnBSDAMod',
+    'RsnDlayClsReq',
+    'DrpanId',
+    'Rsvd1',
+    'Rsvd2',
+    'Rsvd3',
+    'Rsvd4',
+})
 def _cdslstr(col, **kw):
-    kw.setdefault('max_length', CDSL_COLUMN_MAX_LENGTHS[col])
+    max_length = CDSL_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in CDSL_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-        kw.setdefault('db_default', '')
-    return models.TextField(null=not required,blank=not required,db_column=db_column,**kw)
+    field_class = models.TextField if col in CDSL_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        kw.pop('default', None)
+    return field_class(null=not required, blank=not required, db_column=db_column, **kw)
 
 class Cdsl(models.Model):
     """Configurable default values for CDSL BO opening and modification files."""
@@ -2669,28 +2846,33 @@ MCX_MANDATORY_COLUMNS = frozenset({
     'flag',
 })
 
+MCX_TEXT_COLUMNS = frozenset({
+    'client_name',
+    'fathers_husbands_guardians_name',
+    'client_email_id',
+    'address_1_corresponding',
+    'bank_name_1',
+    'bank_branch_address_1',
+})
+
 MCX_COLUMN_MAX_LENGTHS = {
     column: 255
     for column in MCX_MANDATORY_COLUMNS
+    if column not in MCX_TEXT_COLUMNS
 }
 MCX_COLUMN_MAX_LENGTHS.update({
     'record_type': 10,
     'member_type': 10,
     'category': 10,
     'client_code': 10,
-    'client_name': 150,
     'pan': 10,
     'gender': 2,
-    'fathers_husbands_guardians_name': 75,
     'marital_status': 2,
     'nationality': 2,
-    'client_email_id': 60,
-    'address_1_corresponding': 225,
     'permanent_address_same_as_corresponding_address': 10,
     'mobile_number': 24,
     'pin_code_corresponding': 10,
     'date_of_birth_incorporation': 8,
-    'bank_name_1': 60,
     'bank_account_number_1': 25,
     'bank_account_type_1': 2,
     'occupation': 2,
@@ -2707,14 +2889,18 @@ MCX_COLUMN_MAX_LENGTHS.update({
 def _mcxpk(col):
     return models.BigAutoField(primary_key=True, db_column=col)
 
-
 def _mcxstr(col, **kw):
-    kw.setdefault('max_length', MCX_COLUMN_MAX_LENGTHS[col])
+    max_length = MCX_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in MCX_MANDATORY_COLUMNS
     if required:
         kw.setdefault('default', '')
-    return models.CharField(
+    field_class = models.TextField if col in MCX_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        kw.pop('default', None)
+    return field_class(
         null=not required,
         blank=not required,
         db_column=db_column,
@@ -2728,25 +2914,24 @@ class Mcx(models.Model):
     id = _mcxpk('id')
 
     # Top-level MCX control values.
-    record_type = _mcxstr('record_type', default='10')
-    member_type = _mcxstr('member_type', default='M')
+    record_type = _mcxstr('record_type')
+    member_type = _mcxstr('member_type')
 
     # Category-01 fields. Dynamic values are overwritten from UserDetails
     # while static values remain editable from the MCX master screen.
     client_code = _mcxstr('client_code')
     client_name = _mcxstr('client_name')
-    category = _mcxstr('category', default='01')
+    category = _mcxstr('category')
     pan = _mcxstr('pan')
     gender = _mcxstr('gender')
     fathers_husbands_guardians_name = _mcxstr('fathers_husbands_guardians_name')
     marital_status = _mcxstr('marital_status')
-    nationality = _mcxstr('nationality', default='1')
+    nationality = _mcxstr('nationality')
     client_email_id = _mcxstr('client_email_id')
     address_1_corresponding = _mcxstr('address_1_corresponding')
     pin_code_corresponding = _mcxstr('pin_code_corresponding')
     permanent_address_same_as_corresponding_address = _mcxstr(
         'permanent_address_same_as_corresponding_address',
-        default='Y',
     )
     mobile_number = _mcxstr('mobile_number')
     date_of_birth_incorporation = _mcxstr('date_of_birth_incorporation')
@@ -2755,19 +2940,17 @@ class Mcx(models.Model):
     bank_account_number_1 = _mcxstr('bank_account_number_1')
     bank_account_type_1 = _mcxstr('bank_account_type_1')
     occupation = _mcxstr('occupation')
-    politically_exposed_person = _mcxstr('politically_exposed_person', default='0')
-    in_person_verification = _mcxstr('in_person_verification', default='Y')
-    client_status = _mcxstr('client_status', default='1')
-    client_type_corporate = _mcxstr('client_type_corporate', default='N')
+    politically_exposed_person = _mcxstr('politically_exposed_person')
+    in_person_verification = _mcxstr('in_person_verification')
+    client_status = _mcxstr('client_status')
+    client_type_corporate = _mcxstr('client_type_corporate')
     relationship_with_client_for_mobile_no = _mcxstr(
         'relationship_with_client_for_mobile_no',
-        default='1',
     )
     relationship_with_client_for_email_id = _mcxstr(
         'relationship_with_client_for_email_id',
-        default='1',
     )
-    flag = _mcxstr('flag', default='E')
+    flag = _mcxstr('flag')
 
     class Meta:
         db_table = 'mcx'
@@ -3035,19 +3218,158 @@ NSDL_OPTIONAL_COLUMNS = frozenset(
 NSDL_MANDATORY_COLUMNS = frozenset(
     set(NSDL_COLUMNS) - NSDL_OPTIONAL_COLUMNS
 )
-NSDL_COLUMN_MAX_LENGTHS = {column: 50 for column in NSDL_COLUMNS}
+
+NSDL_TEXT_COLUMNS = frozenset({
+    'name',
+    'email',
+    'signature',
+    'coresAddressLine1',
+    'coresAddressLine2',
+    'coresAddressLine3',
+    'coresAddressLine4',
+    'permAddressLine1',
+    'permAddressLine2',
+    'permAddressLine3',
+    'permAddressLine4',
+    'bankName',
+    'addressLine1',
+    'addressLine2',
+    'addressLine3',
+    'addressLine4',
+    *{
+        f'nominee{number}{suffix}'
+        for number in (1, 2, 3)
+        for suffix in (
+            'EmailId',
+            'addressLine1', 'addressLine2', 'addressLine3', 'addressLine4',
+            'GuardianEmailId',
+        )
+    },
+})
+
+NSDL_COLUMN_MAX_LENGTHS = {
+    column: 50
+    for column in NSDL_COLUMNS
+    if column not in NSDL_TEXT_COLUMNS
+}
+
+
+def _nsdl_update_max_lengths(values):
+    NSDL_COLUMN_MAX_LENGTHS.update({
+        column: max_length
+        for column, max_length in values.items()
+        if column not in NSDL_TEXT_COLUMNS
+    })
+
+
+_nsdl_update_max_lengths({
+    'name': 50,
+    'shortName': 16,
+    'pan': 10,
+    'panFlag': 1,
+    'grossAnnualIncome': 2,
+    'dob': 8,
+    'gender': 1,
+    'mobile': 13,
+    'email': 50,
+    'aadhar': 12,
+    'ddpiid': 6,
+    'eStatement': 1,
+    'signature': 81920,
+    'familyMobileFlag': 1,
+    'familyEmailFlag': 1,
+    'nominationOption': 1,
+    'occupation': 1,
+    'fatherOrHusbandName': 45,
+    'dpId': 8,
+    'clientId': 8,
+    'sharePercentEqually': 1,
+    'numOfNominees': 1,
+    'accountNumber': 30,
+    'bankName': 100,
+    'accountType': 2,
+    'ifsc': 11,
+    'micr': 9,
+})
+for _prefix in ('coresAddress', 'permAddress'):
+    _nsdl_update_max_lengths({
+        f'{_prefix}Line{_number}': 55 for _number in range(1, 5)
+    })
+    _nsdl_update_max_lengths({
+        f'{_prefix}Type': 1,
+        f'{_prefix}city': 45,
+        f'{_prefix}countrycode': 45,
+        f'{_prefix}statecode': 45,
+        f'{_prefix}zipcode': 10,
+    })
+_nsdl_update_max_lengths({
+    'addressType': 1,
+    'addresszipcode': 10,
+})
+for _number in range(1, 4):
+    _nsdl_update_max_lengths({
+        f'nominee{_number}SeqNo': 1,
+        f'nominee{_number}Name': 45,
+        f'nominee{_number}Share': 5,
+        f'nominee{_number}Dob': 8,
+        f'nominee{_number}Minor': 1,
+        f'nominee{_number}RelationWithNominee': 45,
+        f'nominee{_number}MobileNum': 13,
+        f'nominee{_number}EmailId': 50,
+        f'nominee{_number}IdentificationPan': 10,
+        f'nominee{_number}IdentificationAadhar': 12,
+        f'nominee{_number}IdentificationDematAccId': 20,
+        f'nominee{_number}IdentificationSavingBankAccNo': 30,
+        f'nominee{_number}GuardianFlag': 1,
+        f'nominee{_number}GuardianName': 45,
+        f'nominee{_number}GuardianRelationship': 45,
+        f'nominee{_number}GuardianMobileNum': 13,
+        f'nominee{_number}GuardianEmailId': 50,
+        f'nominee{_number}GuardianIdentificationPan': 10,
+        f'nominee{_number}GuardianIdentificationAadhar': 12,
+        f'nominee{_number}GuardianIdentificationDematAccId': 16,
+        f'nominee{_number}GuardianIdentificationSavingBankAccNo': 30,
+    })
+    _nsdl_update_max_lengths({
+        f'nominee{_number}addressLine{_line}': 55
+        for _line in range(1, 5)
+    })
+    _nsdl_update_max_lengths({
+        f'nominee{_number}addressType': 1,
+        f'nominee{_number}addresscity': 45,
+        f'nominee{_number}addresscountrycode': 20,
+        f'nominee{_number}addressstatecode': 20,
+        f'nominee{_number}addresszipcode': 10,
+    })
+    _nsdl_update_max_lengths({
+        f'nominee{_number}guardianAddressLine{_line}': 55
+        for _line in range(1, 5)
+    })
+    NSDL_COLUMN_MAX_LENGTHS.update({
+        f'nominee{_number}guardianAddressType': 2,
+        f'nominee{_number}guardianAddresscity': 45,
+        f'nominee{_number}guardianAddresscountrycode': 20,
+        f'nominee{_number}guardianAddressStatecode': 20,
+        f'nominee{_number}guardianAddresszipcode': 10,
+    })
+del _prefix, _number
 
 def _nsdlstr(col, **kw):
-    # NSDL stores a wide provider payload with many configurable columns.
-    # Keep Django's max-length validation, but use TEXT in MySQL so the
-    # combined inline VARCHAR row does not exceed InnoDB's 8 KB limit.
-    kw.setdefault('max_length', NSDL_COLUMN_MAX_LENGTHS[col])
+    # Only explicitly listed long NSDL fields use TEXT; the remaining fields
+    # are ordinary VARCHAR columns with their configured max_length.
+    max_length = NSDL_COLUMN_MAX_LENGTHS.get(col)
+    if max_length is not None:
+        kw.setdefault('max_length', max_length)
     db_column = kw.pop('db_column', col)
     required = col in NSDL_MANDATORY_COLUMNS
-    return models.TextField(
+    if required:
+        kw.setdefault('default', '')
+    field_class = models.TextField if col in NSDL_TEXT_COLUMNS else models.CharField
+    if field_class is models.TextField:
+        kw.pop('default', None)
+    return field_class(
         null=not required,
         blank=not required,
-        **({'default': ''} if required else {}),
         db_column=db_column,
         **kw,
     )
